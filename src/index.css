@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-serif-title {
+    font-family: 'Cinzel', serif;
+  }
+  .font-formal {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+  .font-script {
+    font-family: 'Great Vibes', cursive;
+  }
+  .font-signature {
+    font-family: 'Alex Brush', cursive;
+  }
+  .font-sans-clean {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .font-modern {
+    font-family: 'Montserrat', system-ui, sans-serif;
+  }
+  .font-classic {
+    font-family: 'Merriweather', Georgia, serif;
+  }
+  .font-helvetica {
+    font-family: 'Helvetica', 'Helvetica Neue', Arial, sans-serif;
+  }
+  .bg-registry-grid {
+    background-color: #F3F5F8;
+    background-image:
+      linear-gradient(to right, rgba(30, 58, 138, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 58, 138, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+/* Certificate print styles */
+@media print {
+  html,
+  body,
+  #root {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything except the printable certificate root */
+  .no-print,
+  header,
+  nav,
+  footer,
+  aside,
+  .generator-sidebar,
+  .controls-bar,
+  .modal-backdrop,
+  .toast-container {
+    display: none !important;
+  }
+
+  #certificate-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  #certificate-print-root [data-cert-sheet] {
+    display: block !important;
+    width: fit-content !important;
+    margin: 0 auto !important;
+    padding: 0.15cm 0 !important;
+    zoom: 0.985;
+    box-shadow: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  #certificate-print-root [data-cert-sheet].print-pdf-sheet {
+    width: 612pt !important;
+    height: 936pt !important;
+    padding: 0 !important;
+    zoom: 1 !important;
+  }
+
+  #certificate-print-root [data-cert-sheet] > div {
+    padding: 0 !important;
+  }
+
+  #certificate-print-root [data-cert-sheet]:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+
+  #printable-certificate {
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Data-only output on pre-templated official paper: keep exact cm/px layout, hide template ink/borders/labels, show only inputted values */
+  #certificate-print-root.print-data-only,
+  #certificate-print-root.print-data-only *,
+  #certificate-print-root.print-data-only *::before,
+  #certificate-print-root.print-data-only *::after {
+    visibility: hidden !important;
+    color: transparent !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  #certificate-print-root.print-data-only [data-print-value="true"],
+  #certificate-print-root.print-data-only [data-print-value="true"] * {
+    visibility: visible !important;
+    color: #000000 !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  @page {
+    size: 8.5in 13in;
+    margin: 0;
+  }
+}
+
+/* On-screen preview toggle for Data-Only pre-templated paper output */
+.screen-print-data-only * {
+  visibility: hidden !important;
+  color: transparent !important;
+  border-color: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.screen-print-data-only [data-print-value="true"],
+.screen-print-data-only [data-print-value="true"] * {
+  visibility: visible !important;
+  color: #000000 !important;
+  border-color: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+

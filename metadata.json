@@ -1,0 +1,6 @@
+{
+  "name": "Certiflow - Certificate Builder",
+  "description": "Template-Based Dynamic Data Binding System for Civil Registry Certificates, featuring pixel-perfect Philippine Certificate of Live Birth (COLB Form 102) and Certificate of Marriage (COM Form 97).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
