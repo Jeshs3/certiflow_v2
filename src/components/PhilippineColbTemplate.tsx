@@ -226,21 +226,21 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="space-y-1 text-left leading-relaxed">
                   <div className="flex items-baseline gap-1 w-full pl-8">
                     <span className="shrink-0 whitespace-nowrap">I/We,</span>
-                    {renderGreenBlank(showPaternity ? (colb?.paternityFatherName || father.fullName) : '', '_________________________', 'flex-1')}
+                    {renderGreenBlank(showPaternity ? (colb?.paternityFatherName || father.fullName).toUpperCase() : '', '_________________________', 'flex-1')}
                     <span className="shrink-0 whitespace-nowrap">and</span>
-                    {renderGreenBlank(showPaternity ? (colb?.paternityMotherName || mother.fullName) : '', '_________________________', 'flex-1')}
+                    {renderGreenBlank(showPaternity ? (colb?.paternityMotherName || mother.fullName).toUpperCase() : '', '_________________________', 'flex-1')}
                     <span className="shrink-0">,</span>
                   </div>
                   <div className="flex items-baseline gap-1 w-full">
                     <span className="shrink-0 whitespace-nowrap">of legal age, am/are the natural father and/or mother of</span>
-                    {renderGreenBlank(showPaternity ? (colb?.paternityChildName || child.fullName) : '', '_________________________', 'flex-1')}
+                    {renderGreenBlank(showPaternity ? (colb?.paternityChildName || child.fullName).toUpperCase() : '', '_________________________', 'flex-1')}
                     <span className="shrink-0 whitespace-nowrap">, who was</span>
                   </div>
                   <div className="flex items-baseline gap-1 w-full">
                     <span className="shrink-0 whitespace-nowrap">born on</span>
                     {renderCmBlank(showPaternity ? (colb?.paternityBirthDate || child.dateOfBirth) : '', '4.2cm')}
                     <span className="shrink-0 whitespace-nowrap">at</span>
-                    {renderCmBlank(showPaternity ? (colb?.paternityBirthPlace || child.placeOfBirth) : '', '7.5cm')}
+                    {renderCmBlank(showPaternity ? (colb?.paternityBirthPlace || child.placeOfBirth).toUpperCase() : '', '7.5cm')}
                     <span className="shrink-0">.</span>
                   </div>
                 </div>
@@ -254,9 +254,9 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
             {/* Father & Mother Signature Lines (Green blank lines, zero label padding) */}
             <div className="grid grid-cols-2 gap-8 text-center shrink-0">
               <div>
-                <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
+                <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                   {showPaternity && (colb?.paternityFatherName || father.fullName) ? (
-                    <span data-print-value="true">{colb?.paternityFatherName || father.fullName}</span>
+                    <span data-print-value="true">{(colb?.paternityFatherName || father.fullName).toUpperCase()}</span>
                   ) : ''}
                 </div>
                 <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -264,9 +264,9 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 </p>
               </div>
               <div>
-                <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
+                <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                   {showPaternity && (colb?.paternityMotherName || mother.fullName) ? (
-                    <span data-print-value="true">{colb?.paternityMotherName || mother.fullName}</span>
+                    <span data-print-value="true">{(colb?.paternityMotherName || mother.fullName).toUpperCase()}</span>
                   ) : ''}
                 </div>
                 <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -294,13 +294,13 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
               <div className="flex items-baseline gap-1 w-full">
                 {renderGreenBlank(
-                  showPaternity ? (colb?.paternityFatherName || father.fullName) : '',
+                  showPaternity ? (colb?.paternityFatherName || father.fullName).toUpperCase() : '',
                   '_________________________',
                   'flex-1'
                 )}
                 <span className="shrink-0 whitespace-nowrap">and</span>
                 {renderGreenBlank(
-                  showPaternity ? (colb?.paternityMotherName || mother.fullName) : '',
+                  showPaternity ? (colb?.paternityMotherName || mother.fullName).toUpperCase() : '',
                   '_________________________',
                   'flex-1'
                 )}
@@ -315,7 +315,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
               <div className="flex items-baseline gap-1 w-full">
                 {renderCmBlank(
-                  showPaternity ? (colb?.paternityFatherCtcPlace || colb?.paternitySwornPlace) : '',
+                  showPaternity ? (colb?.paternityFatherCtcPlace || colb?.paternitySwornPlace || '').toUpperCase() : '',
                   '7.5cm'
                 )}
                 <span className="shrink-0">.</span>
@@ -337,7 +337,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div>
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showPaternity && colb?.affidavitPaternityAdminOfficer ? (
-                      <span data-print-value="true">{colb.affidavitPaternityAdminOfficer}</span>
+                      <span data-print-value="true">{colb.affidavitPaternityAdminOfficer.toUpperCase()}</span>
                     ) : ''}
                   </div>
                   <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -359,9 +359,9 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   </p>
                 </div>
                 <div>
-                  <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
+                  <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showPaternity && colb?.paternityAdminOfficerAddress ? (
-                      <span data-print-value="true">{colb.paternityAdminOfficerAddress}</span>
+                      <span data-print-value="true">{colb.paternityAdminOfficerAddress.toUpperCase()}</span>
                     ) : ''}
                   </div>
                   <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -393,7 +393,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="flex items-baseline w-full pl-8">
                   <span className="shrink-0 whitespace-nowrap">I</span>
                   {renderGreenBlank(
-                    showDelayed ? (colb?.delayedAffiantName || father.fullName) : '',
+                    showDelayed ? (colb?.delayedAffiantName || father.fullName).toUpperCase() : '',
                     '_________________________',
                     'flex-1'
                   )}
@@ -407,7 +407,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="text-justify [text-align-last:justify] leading-relaxed w-full">
                   residence and postal address at{' '}
                   {renderCmBlank(
-                    showDelayed ? (colb?.delayedAffiantResidence || colb?.motherResidenceStreet) : '',
+                    showDelayed ? (colb?.delayedAffiantResidence || colb?.motherResidenceStreet || '').toUpperCase() : '',
                     '13cm'
                   )}
                 </div>
@@ -435,7 +435,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                             my birth in{' '}
                             {renderCmBlank(
                               showDelayed && colb?.delayedApplicantType === 'my_birth'
-                                ? (colb?.delayedApplicantPlace || child.placeOfBirth)
+                                ? (colb?.delayedApplicantPlace || child.placeOfBirth).toUpperCase()
                                 : '',
                               '5.5cm'
                             )}{' '}
@@ -462,14 +462,14 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                             the birth of{' '}
                             {renderCmBlank(
                               showDelayed && colb?.delayedApplicantType !== 'my_birth'
-                                ? (colb?.delayedChildName || child.fullName)
+                                ? (colb?.delayedChildName || child.fullName).toUpperCase()
                                 : '',
                               '4.6cm'
                             )}{' '}
                             who was born in{' '}
                             {renderCmBlank(
                               showDelayed && colb?.delayedApplicantType !== 'my_birth'
-                                ? (colb?.delayedApplicantPlace || child.placeOfBirth)
+                                ? (colb?.delayedApplicantPlace || child.placeOfBirth).toUpperCase()
                                 : '',
                               '4.3cm'
                             )}
@@ -493,13 +493,13 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <li className="leading-relaxed text-justify">
                   That I/he/she was attended at birth by{' '}
                   {renderCmBlank(
-                    showDelayed ? (colb?.delayedAttendantName || colb?.attendantSignatureName) : '',
+                    showDelayed ? (colb?.delayedAttendantName || colb?.attendantSignatureName || '').toUpperCase() : '',
                     '8.2cm'
                   )}{' '}
                   who resides at
                   <br />
                   {renderCmBlank(
-                    showDelayed ? (colb?.delayedAttendantAddress || colb?.attendantAddress) : '',
+                    showDelayed ? (colb?.delayedAttendantAddress || colb?.attendantAddress || '').toUpperCase() : '',
                     '14cm'
                   )}.
                 </li>
@@ -532,7 +532,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                                   married on{' '}
                                   {renderCmBlank(showDelayed && !isDelayedNotMarried ? datePart : '', '4.5cm')}{' '}
                                   at{' '}
-                                  {renderCmBlank(showDelayed && !isDelayedNotMarried ? placePart : '', '3.8cm')}
+                                  {renderCmBlank(showDelayed && !isDelayedNotMarried ? (placePart || '').toUpperCase() : '', '3.8cm')}
                                   <br />
                                   {renderCmBlank('', '8.5cm')}.
                                 </span>
@@ -551,7 +551,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                                   father whose name is{' '}
                                   {renderCmBlank(
                                     showDelayed && isDelayedNotMarried
-                                      ? (colb?.delayedFatherName || colb?.paternityFatherName || father.fullName)
+                                      ? (colb?.delayedFatherName || colb?.paternityFatherName || father.fullName).toUpperCase()
                                       : '',
                                     '6.5cm'
                                   )}
@@ -580,7 +580,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <li className="leading-relaxed">
                   <div className="text-justify [text-align-last:justify]">
                     (For applicant only) That I am married to{' '}
-                    {renderCmBlank(showDelayed ? colb?.delayedApplicantMarriedTo : '', '6.5cm')}.
+                    {renderCmBlank(showDelayed ? (colb?.delayedApplicantMarriedTo || '').toUpperCase() : '', '6.5cm')}.
                   </div>
                   <div className="text-justify [text-align-last:justify]">
                     (If the applicant is other than the document owner) That I am the{' '}
@@ -607,7 +607,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="text-justify [text-align-last:justify] leading-relaxed">
                   {renderCmBlank(showDelayed ? colb?.delayedSwornYear : '', '7.6cm')}{' '}
                   at{' '}
-                  {renderCmBlank(showDelayed ? colb?.delayedSwornPlace : '', '7.4cm')}, Philippines.
+                  {renderCmBlank(showDelayed ? (colb?.delayedSwornPlace || '').toUpperCase() : '', '7.4cm')}, Philippines.
                 </div>
               </div>
 
@@ -616,7 +616,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="w-[7.8cm] text-center">
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showDelayed && (colb?.delayedAffiantName || father.fullName) ? (
-                      <span data-print-value="true">{colb?.delayedAffiantName || father.fullName}</span>
+                      <span data-print-value="true">{(colb?.delayedAffiantName || father.fullName).toUpperCase()}</span>
                     ) : ''}
                   </div>
                   <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -637,14 +637,14 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 at
               </div>
               <div className="text-justify [text-align-last:justify] leading-relaxed">
-                {renderCmBlank(showDelayed ? colb?.delayedSwornPlace : '', '9cm')}, Philippines, affiant who exhibited to me his/her CTC/valid ID
+                {renderCmBlank(showDelayed ? (colb?.delayedSwornPlace || '').toUpperCase() : '', '9cm')}, Philippines, affiant who exhibited to me his/her CTC/valid ID
               </div>
               <div className="text-justify [text-align-last:justify] leading-relaxed">
                 {renderCmBlank(showDelayed ? colb?.delayedAffiantCtc : '', '3.6cm')}{' '}
                 issued on{' '}
                 {renderCmBlank(showDelayed ? colb?.delayedAffiantCtcDate : '', '3.2cm')}{' '}
                 at{' '}
-                {renderCmBlank(showDelayed ? (colb?.delayedAffiantCtcPlace || colb?.delayedSwornPlace) : '', '7.5cm')}.
+                {renderCmBlank(showDelayed ? (colb?.delayedAffiantCtcPlace || colb?.delayedSwornPlace || '').toUpperCase() : '', '7.5cm')}.
               </div>
             </div>
 
@@ -663,7 +663,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div>
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showDelayed && colb?.delayedAdminOfficerName ? (
-                      <span data-print-value="true">{colb.delayedAdminOfficerName}</span>
+                      <span data-print-value="true">{colb.delayedAdminOfficerName.toUpperCase()}</span>
                     ) : ''}
                   </div>
                   <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -685,9 +685,9 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   </p>
                 </div>
                 <div>
-                  <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
+                  <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showDelayed && colb?.delayedAdminOfficerAddress ? (
-                      <span data-print-value="true">{colb.delayedAdminOfficerAddress}</span>
+                      <span data-print-value="true">{colb.delayedAdminOfficerAddress.toUpperCase()}</span>
                     ) : ''}
                   </div>
                   <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -993,7 +993,9 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div>
                   <BoundBox bindingId="child.multipleBirthOrder" token="{{colb.multipleBirthOrder}}">
                     <p data-print-value="true" className="font-helvetica font-bold text-[8pt] text-black border-b border-[#348e38] min-h-[12px] leading-none text-center truncate">
-                      {colb?.multipleBirthChildWas || (colb?.multipleBirthOrder ? (colb.multipleBirthOrder === '1' ? 'First' : colb.multipleBirthOrder === '2' ? 'Second' : 'Third') : '')}
+                      {(colb?.typeOfBirth || additional.birthType || '').toLowerCase() === 'single'
+                        ? 'N/A'
+                        : colb?.multipleBirthChildWas || (colb?.multipleBirthOrder ? (colb.multipleBirthOrder === '1' ? 'First' : colb.multipleBirthOrder === '2' ? 'Second' : 'Third') : '')}
                     </p>
                   </BoundBox>
                 </div>
@@ -1221,8 +1223,8 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="col-span-10 grid grid-cols-5 gap-1 text-center">
                   <div className="col-span-2 min-w-0">
                     <BoundBox bindingId="mother.residenceStreet" token="{{mother.residenceStreet}}" className="px-1">
-                      <p data-print-value="true" className="font-bold text-[8.5pt] text-black min-h-[14px] leading-tight truncate">
-                        {colb?.motherResidenceStreet || ''}
+                      <p data-print-value="true" className="font-bold text-[8.5pt] uppercase text-black min-h-[14px] leading-tight truncate">
+                        {(colb?.motherResidenceStreet || '').toUpperCase()}
                       </p>
                     </BoundBox>
                   </div>
@@ -1387,8 +1389,8 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="col-span-10 grid grid-cols-5 gap-1 text-center">
                   <div className="col-span-2 min-w-0">
                     <BoundBox bindingId="father.residenceStreet" token="{{father.residenceStreet}}" className="px-1">
-                      <p data-print-value="true" className="font-bold text-[8.5pt] text-black min-h-[14px] leading-tight truncate">
-                        {colb?.fatherResidenceStreet || colb?.motherResidenceStreet || ''}
+                      <p data-print-value="true" className="font-bold text-[8.5pt] uppercase text-black min-h-[14px] leading-tight truncate">
+                        {(colb?.fatherResidenceStreet || colb?.motherResidenceStreet || '').toUpperCase()}
                       </p>
                     </BoundBox>
                   </div>
@@ -1629,11 +1631,13 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                     ) : ''}
                   </span>
                   <span className="text-black font-medium">5 Others (Specify)</span>
-                  <span className="border-b border-[#348e38] min-w-[35px] sm:min-w-[45px] inline-block text-center font-bold text-black text-[7.5pt] leading-none px-1 pb-0.5">
-                    {!blankMode && colb?.attendantType === '5' && colb?.attendantOtherSpecify ? (
-                      <span data-print-value="true">{colb.attendantOtherSpecify}</span>
-                    ) : ''}
-                  </span>
+                  <BoundBox bindingId="attendant.otherSpecify" token="{{attendant.otherSpecify}}" className="inline-block" as="span">
+                    <span className="border-b border-[#348e38] min-w-[35px] sm:min-w-[45px] inline-block text-center font-bold text-black text-[7.5pt] leading-none px-1 pb-0.5">
+                      {!blankMode && colb?.attendantType === '5' && colb?.attendantOtherSpecify ? (
+                        <span data-print-value="true">{colb.attendantOtherSpecify}</span>
+                      ) : ''}
+                    </span>
+                  </BoundBox>
                 </div>
               </div>
             </div>
@@ -1668,15 +1672,15 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="col-span-7 space-y-0.5 min-w-0">
                   <div className="flex items-baseline gap-1">
                     <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
-                    <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] text-black px-1 min-h-[12px] truncate">
-                      {blankMode ? '' : (colb?.attendantSignatureName || '')}
+                    <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[12px] truncate">
+                      {blankMode ? '' : (colb?.attendantSignatureName || '').toUpperCase()}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Name in Print</span>
                     <BoundBox bindingId="attendant.signatureName" token="{{attendant.signatureName}}" className="flex-1 min-w-0">
                       <span data-print-value="true" className="block border-b border-[#348e38] font-bold text-[8.5pt] text-black uppercase px-1 min-h-[12px] truncate">
-                        {colb?.attendantSignatureName || ''}
+                        {(colb?.attendantSignatureName || '').toUpperCase()}
                       </span>
                     </BoundBox>
                   </div>
@@ -1695,8 +1699,8 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   <div className="flex items-baseline gap-1">
                     <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Address</span>
                     <BoundBox bindingId="attendant.address" token="{{attendant.address}}" className="flex-1 min-w-0">
-                      <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                        {colb?.attendantAddress || ''}
+                      <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] uppercase text-black px-1 min-h-[12px] truncate">
+                        {(colb?.attendantAddress || '').toUpperCase()}
                       </span>
                     </BoundBox>
                   </div>
@@ -1731,15 +1735,15 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <div className="space-y-0.5 font-helvetica pt-0.5">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] text-black px-1 min-h-[13px] truncate">
-                    {blankMode ? '' : (colb?.informantSignatureName || father.fullName || '')}
+                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[13px] truncate">
+                    {blankMode ? '' : (colb?.informantSignatureName || father.fullName || '').toUpperCase()}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Name in Print</span>
                   <BoundBox bindingId="informant.signatureName" token="{{informant.signatureName}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] font-bold text-[8.5pt] text-black uppercase px-1 min-h-[13px] truncate">
-                      {colb?.informantSignatureName || father.fullName || ''}
+                      {(colb?.informantSignatureName || father.fullName || '').toUpperCase()}
                     </span>
                   </BoundBox>
                 </div>
@@ -1753,9 +1757,11 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Address</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[13px] truncate">
-                    {colb?.informantAddress || colb?.motherResidenceStreet || ''}
-                  </span>
+                  <BoundBox bindingId="informant.address" token="{{informant.address}}" className="flex-1 min-w-0">
+                    <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] uppercase text-black px-1 min-h-[13px] truncate">
+                      {(colb?.informantAddress || colb?.motherResidenceStreet || '').toUpperCase()}
+                    </span>
+                  </BoundBox>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
@@ -1776,15 +1782,15 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <div className="space-y-0.5 font-helvetica pt-0.5">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] text-black px-1 min-h-[13px] truncate">
-                    {blankMode ? '' : (colb?.preparedByName || '')}
+                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[13px] truncate">
+                    {blankMode ? '' : (colb?.preparedByName || '').toUpperCase()}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Name in Print</span>
                   <BoundBox bindingId="registry.preparedByName" token="{{registry.preparedByName}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] font-bold text-[8.5pt] text-black uppercase px-1 min-h-[13px] truncate">
-                      {colb?.preparedByName || ''}
+                      {(colb?.preparedByName || '').toUpperCase()}
                     </span>
                   </BoundBox>
                 </div>
@@ -1817,29 +1823,33 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <div className="space-y-0.5 font-helvetica">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] text-black px-1 min-h-[12px] truncate">
-                    {blankMode ? '' : (colb?.receivedByName || '')}
+                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[12px] truncate">
+                    {blankMode ? '' : (colb?.receivedByName || '').toUpperCase()}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Name in Print</span>
                   <BoundBox bindingId="registry.receivedByName" token="{{registry.receivedByName}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] font-bold text-[8.5pt] text-black uppercase px-1 min-h-[12px] truncate">
-                      {colb?.receivedByName || ''}
+                      {(colb?.receivedByName || '').toUpperCase()}
                     </span>
                   </BoundBox>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Title or Position</span>
-                  <span data-print-value="true" className="block flex-1 min-w-0 border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                    {colb?.receivedByTitle || ''}
-                  </span>
+                  <BoundBox bindingId="registry.receivedByTitle" token="{{registry.receivedByTitle}}" className="flex-1 min-w-0">
+                    <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
+                      {colb?.receivedByTitle || ''}
+                    </span>
+                  </BoundBox>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                    {colb?.receivedByDate || ''}
-                  </span>
+                  <BoundBox bindingId="registry.receivedByDate" token="{{registry.receivedByDate}}" className="flex-1 min-w-0">
+                    <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
+                      {colb?.receivedByDate || ''}
+                    </span>
+                  </BoundBox>
                 </div>
               </div>
             </div>
@@ -1852,29 +1862,33 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <div className="space-y-0.5 font-helvetica">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] text-black px-1 min-h-[12px] truncate">
-                    {blankMode ? '' : (colb?.registeredByName || colb?.receivedByName || '')}
+                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[12px] truncate">
+                    {blankMode ? '' : (colb?.registeredByName || colb?.receivedByName || '').toUpperCase()}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Name in Print</span>
                   <BoundBox bindingId="registry.registeredByName" token="{{registry.registeredByName}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] font-bold text-[8.5pt] text-black uppercase px-1 min-h-[12px] truncate">
-                      {colb?.registeredByName || colb?.receivedByName || ''}
+                      {(colb?.registeredByName || colb?.receivedByName || '').toUpperCase()}
                     </span>
                   </BoundBox>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Title or Position</span>
-                  <span data-print-value="true" className="block flex-1 min-w-0 border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                    {colb?.registeredByTitle || ''}
-                  </span>
+                  <BoundBox bindingId="registry.registeredByTitle" token="{{registry.registeredByTitle}}" className="flex-1 min-w-0">
+                    <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
+                      {colb?.registeredByTitle || ''}
+                    </span>
+                  </BoundBox>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
-                  <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                    {colb?.registeredByDate || ''}
-                  </span>
+                  <BoundBox bindingId="registry.registeredByDate" token="{{registry.registeredByDate}}" className="flex-1 min-w-0">
+                    <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
+                      {colb?.registeredByDate || ''}
+                    </span>
+                  </BoundBox>
                 </div>
               </div>
             </div>

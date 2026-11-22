@@ -246,25 +246,25 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                   I,{' '}
                   <span
                     style={{ width: '4.4cm' }}
-                    className="inline-block border-b border-rose-700 font-bold text-center truncate align-bottom indent-0"
+                    className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom indent-0"
                   >
-                    {pv(val(com?.solemnizingOfficerName || marriage.officiantName))}
+                    {pv(val(com?.solemnizingOfficerName || marriage.officiantName).toUpperCase())}
                   </span>
                   , of legal age, Solemnizing Officer of{' '}
                   <span
                     style={{ width: '3.9cm' }}
-                    className="inline-block border-b border-rose-700 text-center truncate align-bottom indent-0"
+                    className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom indent-0"
                   >
-                    {pv(val(com?.placeOfMarriage || marriage.placeOfMarriage))}
+                    {pv(val(com?.placeOfMarriage || marriage.placeOfMarriage).toUpperCase())}
                   </span>{' '}
                   with address at
                 </div>
                 <div className="text-justify">
                   <span
                     style={{ width: '5.4cm' }}
-                    className="inline-block border-b border-rose-700 text-center truncate align-bottom"
+                    className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
                   >
-                    {pv(val(com?.cityMunicipality))}
+                    {pv(val(com?.cityMunicipality).toUpperCase())}
                   </span>
                   , after having been sworn to in accordance with law, do hereby depose and say:
                 </div>
@@ -275,17 +275,17 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 className="text-justify text-[7.2pt] leading-[1.24] text-black"
               >
                 1. That I have solemnized the marriage between{' '}
-                <span className="border-b border-rose-700 font-bold px-1.5">
+                <span className="border-b border-rose-700 font-bold uppercase px-1.5">
                   {[hFirst, hMiddle, hLast].filter(Boolean).length > 0 ? (
-                    <span data-print-value="true">{[hFirst, hMiddle, hLast].filter(Boolean).join(' ')}</span>
+                    <span data-print-value="true">{[hFirst, hMiddle, hLast].filter(Boolean).join(' ').toUpperCase()}</span>
                   ) : (
                     '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
                   )}
                 </span>{' '}
                 and{' '}
-                <span className="border-b border-rose-700 font-bold px-1.5">
+                <span className="border-b border-rose-700 font-bold uppercase px-1.5">
                   {[wFirst, wMiddle, wLast].filter(Boolean).length > 0 ? (
-                    <span data-print-value="true">{[wFirst, wMiddle, wLast].filter(Boolean).join(' ')}</span>
+                    <span data-print-value="true">{[wFirst, wMiddle, wLast].filter(Boolean).join(' ').toUpperCase()}</span>
                   ) : (
                     '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
                   )}
@@ -409,8 +409,8 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
               {/* Solemnizing Officer Signature Line (COLB-style right aligned 7.8cm, listing font & size, no parentheses) */}
               <div className="flex justify-end pr-2">
                 <div className="w-[7.8cm] text-center">
-                  <div className="border-b border-rose-700 font-signature text-sm italic min-h-[12px] pb-0 leading-none text-black">
-                    {pvEmpty(val(com?.solemnizingOfficerName || marriage.officiantName))}
+                  <div className="border-b border-rose-700 font-signature text-sm italic uppercase min-h-[12px] pb-0 leading-none text-black">
+                    {pvEmpty(val(com?.solemnizingOfficerName || marriage.officiantName).toUpperCase())}
                   </div>
                   <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
                     Signature Over Printed Name of Solemnizing Officer
@@ -565,16 +565,16 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                     I,{' '}
                     <span
                       style={{ width: '7.1cm' }}
-                      className="inline-block border-b border-rose-700 font-bold text-center truncate align-bottom indent-0"
+                      className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom indent-0"
                     >
-                      {pv(showDelayed ? delayedAffiant : '')}
+                      {pv(showDelayed ? delayedAffiant.toUpperCase() : '')}
                     </span>
                     , of legal age, single/married/divorced/widow/widower, with residence and postal address at{' '}
                     <span
                       style={{ width: '16cm' }}
-                      className="inline-block border-b border-rose-700 text-center truncate align-bottom indent-0"
+                      className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom indent-0"
                     >
-                      {pv(showDelayed ? delayedResidence : '')}
+                      {pv(showDelayed ? delayedResidence.toUpperCase() : '')}
                     </span>
                     <br />
                     <span
@@ -596,16 +596,16 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                             my marriage with{' '}
                             <span
                               style={{ width: '4.4cm' }}
-                              className="inline-block border-b border-rose-700 text-center truncate align-bottom"
+                              className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom"
                             >
-                              {pv(showDelayed && isSelfApplicant ? (com?.delayedSpouseName || defaultWifeName) : '')}
+                              {pv(showDelayed && isSelfApplicant ? (com?.delayedSpouseName || defaultWifeName).toUpperCase() : '')}
                             </span>{' '}
                             in{' '}
                             <span
                               style={{ width: '3.2cm' }}
-                              className="inline-block border-b border-rose-700 text-center truncate align-bottom"
+                              className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
                             >
-                              {pv(showDelayed && isSelfApplicant ? delayedMarriagePlaceStr : '')}
+                              {pv(showDelayed && isSelfApplicant ? delayedMarriagePlaceStr.toUpperCase() : '')}
                             </span>{' '}
                             on{' '}
                             <span
@@ -622,23 +622,23 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                             my marriage between{' '}
                             <span
                               style={{ width: '5.3cm' }}
-                              className="inline-block border-b border-rose-700 font-bold text-center truncate align-bottom"
+                              className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom"
                             >
-                              {pv(showDelayed && !isSelfApplicant ? defaultHusbandName : '')}
+                              {pv(showDelayed && !isSelfApplicant ? defaultHusbandName.toUpperCase() : '')}
                             </span>{' '}
                             and{' '}
                             <span
                               style={{ width: '3cm' }}
-                              className="inline-block border-b border-rose-700 font-bold text-center truncate align-bottom"
+                              className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom"
                             >
-                              {pv(showDelayed && !isSelfApplicant ? defaultWifeName : '')}
+                              {pv(showDelayed && !isSelfApplicant ? defaultWifeName.toUpperCase() : '')}
                             </span>{' '}
                             in{' '}
                             <span
                               style={{ width: '3.1cm' }}
-                              className="inline-block border-b border-rose-700 text-center truncate align-bottom"
+                              className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
                             >
-                              {pv(showDelayed && !isSelfApplicant ? delayedMarriagePlaceStr : '')}
+                              {pv(showDelayed && !isSelfApplicant ? delayedMarriagePlaceStr.toUpperCase() : '')}
                             </span>{' '}
                             on{' '}
                             <span
@@ -658,9 +658,9 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                         2. That the said marriage was solemnized by{' '}
                         <span
                           style={{ width: '6.9cm' }}
-                          className="inline-block border-b border-rose-700 text-center truncate align-bottom"
+                          className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
                         >
-                          {pv(showDelayed ? (com?.solemnizingOfficerName || marriage.officiantName) : '')}
+                          {pv(showDelayed ? (com?.solemnizingOfficerName || marriage.officiantName || '').toUpperCase() : '')}
                         </span>{' '}
                         under
                       </p>
@@ -710,9 +710,9 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                             at{' '}
                             <span
                               style={{ width: '4.5cm' }}
-                              className="inline-block border-b border-rose-700 text-center truncate align-bottom"
+                              className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
                             >
-                              {pv(showDelayed ? com?.licenseIssuedPlace : '')}
+                              {pv(showDelayed ? (com?.licenseIssuedPlace || '').toUpperCase() : '')}
                             </span>
                           </span>
                         </div>
@@ -815,9 +815,9 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                     at{' '}
                     <span
                       style={{ width: '6.9cm' }}
-                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
+                      className="inline-block border-b border-rose-700 uppercase text-center align-bottom indent-0"
                     >
-                      {pv(showDelayed ? com?.delayedSwornPlace : '')}
+                      {pv(showDelayed ? (com?.delayedSwornPlace || '').toUpperCase() : '')}
                     </span>
                     , Philippines.
                   </p>
@@ -825,8 +825,8 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                   {/* Affiant Signature Line (COLB-style right aligned 7.8cm, 1.8cm right padding, zero label padding) */}
                   <div style={{ paddingRight: '1.8cm' }} className="flex justify-end pt-2">
                     <div className="w-[7.8cm] text-center">
-                      <div className="border-b border-rose-700 font-signature text-sm italic min-h-[16px] pb-0 leading-none text-black">
-                        {pvEmpty(showDelayed ? delayedAffiant : '')}
+                      <div className="border-b border-rose-700 font-signature text-sm italic uppercase min-h-[16px] pb-0 leading-none text-black">
+                        {pvEmpty(showDelayed ? delayedAffiant.toUpperCase() : '')}
                       </div>
                       <p className="text-[6.5pt] font-helvetica m-0 p-0 leading-tight text-black">
                         Signature Over Printed Name of Affiant
@@ -855,8 +855,8 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                     <span className="shrink-0 whitespace-nowrap indent-0">at</span>
                   </div>
                   <div className="flex items-baseline gap-1 w-full">
-                    <span className="flex-1 min-w-0 border-b border-rose-700 px-1 text-center leading-tight truncate">
-                      {pv(showDelayed ? com?.delayedSwornPlace : '')}
+                    <span className="flex-1 min-w-0 border-b border-rose-700 px-1 uppercase text-center leading-tight truncate">
+                      {pv(showDelayed ? (com?.delayedSwornPlace || '').toUpperCase() : '')}
                     </span>
                     <span className="shrink-0 whitespace-nowrap">, Philippines, affiant who exhibited to me his/her CTC/valid ID</span>
                   </div>
@@ -869,8 +869,8 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                       {pv(showDelayed ? com?.delayedAffiantCtcDate : '')}
                     </span>
                     <span className="shrink-0 whitespace-nowrap">at</span>
-                    <span className="flex-[1.5] min-w-0 border-b border-rose-700 px-1 text-center leading-tight truncate">
-                      {pv(showDelayed ? com?.delayedAffiantCtcPlace : '')}
+                    <span className="flex-[1.5] min-w-0 border-b border-rose-700 px-1 uppercase text-center leading-tight truncate">
+                      {pv(showDelayed ? (com?.delayedAffiantCtcPlace || '').toUpperCase() : '')}
                     </span>
                     <span className="shrink-0">.</span>
                   </div>
@@ -890,7 +890,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                     </div>
                     <div>
                       <div className="border-b border-rose-700 text-[8pt] min-h-[16px] pb-0 font-bold font-helvetica text-black uppercase">
-                        {pv(showDelayed ? com?.delayedAdminOfficerName : '')}
+                        {pv(showDelayed ? (com?.delayedAdminOfficerName || '').toUpperCase() : '')}
                       </div>
                       <p className="text-[6.5pt] font-helvetica m-0 p-0 leading-tight text-black">
                         Name in Print
@@ -909,8 +909,8 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                       </p>
                     </div>
                     <div>
-                      <div className="border-b border-rose-700 text-[8pt] min-h-[16px] pb-0 font-bold font-helvetica text-black">
-                        {pv(showDelayed ? com?.delayedAdminOfficerAddress : '')}
+                      <div className="border-b border-rose-700 text-[8pt] min-h-[16px] pb-0 font-bold font-helvetica text-black uppercase">
+                        {pv(showDelayed ? (com?.delayedAdminOfficerAddress || '').toUpperCase() : '')}
                       </div>
                       <p className="text-[6.5pt] font-helvetica m-0 p-0 leading-tight text-black">
                         Address
@@ -1556,14 +1556,14 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
 
             <div className="grid grid-cols-2 gap-10 pt-1.5 px-4 text-center">
               <div>
-                <div className="border-b border-dotted border-rose-700 font-signature text-xs italic text-black min-h-[14px] pb-0.5">
-                  {pvEmpty([hFirst, hLast].filter(Boolean).join(' '))}
+                <div className="border-b border-dotted border-rose-700 font-signature text-xs italic uppercase text-black min-h-[14px] pb-0.5">
+                  {pvEmpty([hFirst, hLast].filter(Boolean).join(' ').toUpperCase())}
                 </div>
                 <span className="text-[6.2pt] text-black">(Signature of Husband)</span>
               </div>
               <div>
-                <div className="border-b border-dotted border-rose-700 font-signature text-xs italic text-black min-h-[14px] pb-0.5">
-                  {pvEmpty([wFirst, wLast].filter(Boolean).join(' '))}
+                <div className="border-b border-dotted border-rose-700 font-signature text-xs italic uppercase text-black min-h-[14px] pb-0.5">
+                  {pvEmpty([wFirst, wLast].filter(Boolean).join(' ').toUpperCase())}
                 </div>
                 <span className="text-[6.2pt] text-black">(Signature of Wife)</span>
               </div>
@@ -1606,9 +1606,9 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                     at{' '}
                     <span
                       style={{ width: '4.5cm' }}
-                      className="inline-block border-b border-dotted border-rose-700 font-semibold text-black px-1 text-center truncate align-bottom"
+                      className="inline-block border-b border-dotted border-rose-700 font-semibold uppercase text-black px-1 text-center truncate align-bottom"
                     >
-                      {pv(val(com?.licenseIssuedPlace))}
+                      {pv(val(com?.licenseIssuedPlace).toUpperCase())}
                     </span>
                     <br />
                     in favor of said parties, was exhibited to me.
@@ -1699,7 +1699,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 <div className="flex items-baseline gap-1">
                   <span className="w-16 shrink-0 font-helvetica text-black font-normal">Name in Print</span>
                   <span style={{ borderBottomWidth: '0.5px' }} className="flex-1 min-w-0 border-b border-rose-800 font-helvetica font-normal uppercase text-black min-h-[12px] truncate">
-                    {pvEmpty(val(com?.receivedByName))}
+                    {pvEmpty(val(com?.receivedByName?.toUpperCase()))}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -1729,7 +1729,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 <div className="flex items-baseline gap-1">
                   <span className="w-16 shrink-0">Name in Print</span>
                   <span className="flex-1 min-w-0 border-b border-rose-800 font-bold uppercase text-black min-h-[12px] truncate">
-                    {pvEmpty(val(com?.registeredByName))}
+                    {pvEmpty(val(com?.registeredByName?.toUpperCase()))}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">

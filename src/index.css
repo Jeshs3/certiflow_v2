@@ -130,6 +130,11 @@
     box-shadow: none !important;
   }
 
+  #certificate-print-root.print-data-only [data-cert-sheet]:not(.print-pdf-sheet) [data-print-value="true"] {
+    position: relative !important;
+    top: -12pt !important;
+  }
+
   @page {
     size: 8.5in 13in;
     margin: 0;

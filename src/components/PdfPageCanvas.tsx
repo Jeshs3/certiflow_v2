@@ -126,7 +126,7 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
     >
       <canvas
         ref={canvasRef}
-        style={{ width: `${width}px`, height: `${height}px` }}
+        style={{ width: '100%', height: '100%' }}
         className="block w-full h-full"
       />
       {status === 'loading' && (

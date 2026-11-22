@@ -8,13 +8,6 @@ const IS_PROD = process.env.NODE_ENV === 'production' || process.env.VERCEL === 
 
 const ADMIN_DISPLAY_NAME =
   process.env.ADMIN_DISPLAY_NAME || 'Admin Officer — Municipality of Sagbayan';
-const ADMIN_USERNAME_ALIAS = process.env.ADMIN_USERNAME || '';
-const ADMIN_EMAIL_ALIAS = process.env.ADMIN_EMAIL || '';
-
-const ALLOWED_ADMIN_EMAILS = (process.env.ALLOWED_ADMIN_EMAILS || '')
-  .split(',')
-  .map((item) => item.trim().toLowerCase())
-  .filter(Boolean);
 
 function normalizeSupabaseUrl(rawUrl: string): string {
   const cleaned = rawUrl.trim().replace(/^['"]|['"]$/g, '').replace(/\/+$/, '');
@@ -101,10 +94,12 @@ interface AuthenticatedRequest extends Request {
 interface SupabaseAuthUser {
   id: string;
   email?: string;
+  role?: string;
   user_metadata?: {
     username?: string;
     name?: string;
     full_name?: string;
+    display_name?: string;
     role?: string;
   };
   app_metadata?: {
@@ -183,30 +178,13 @@ async function authenticateWithSupabase(
     };
   }
 
-  const loginEmail = identifier.includes('@')
-    ? identifier
-    : ADMIN_EMAIL_ALIAS &&
-      ADMIN_USERNAME_ALIAS &&
-      safeEqualString(identifier, ADMIN_USERNAME_ALIAS)
-    ? ADMIN_EMAIL_ALIAS
-    : '';
+  const loginEmail = identifier.trim();
 
-  if (!loginEmail) {
+  if (!loginEmail || !loginEmail.includes('@')) {
     return {
       ok: false,
       status: 400,
       error: 'Please enter a valid registered officer email address.',
-    };
-  }
-
-  if (
-    ALLOWED_ADMIN_EMAILS.length > 0 &&
-    !ALLOWED_ADMIN_EMAILS.includes(loginEmail.toLowerCase())
-  ) {
-    return {
-      ok: false,
-      status: 403,
-      error: 'This account does not have Civil Registry Admin Officer access.',
     };
   }
 
@@ -252,18 +230,6 @@ async function authenticateWithSupabase(
   }
 
   const sbUser = payload.user;
-  const verifiedEmail = (sbUser.email || loginEmail).toLowerCase();
-  if (
-    ALLOWED_ADMIN_EMAILS.length > 0 &&
-    !ALLOWED_ADMIN_EMAILS.includes(verifiedEmail)
-  ) {
-    return {
-      ok: false,
-      status: 403,
-      error: 'This account is not authorized as a Civil Registry Admin Officer.',
-    };
-  }
-
   const meta = sbUser.user_metadata || {};
   return {
     ok: true,
@@ -271,7 +237,12 @@ async function authenticateWithSupabase(
       id: sbUser.id,
       email: sbUser.email || loginEmail,
       username: meta.username || sbUser.email || loginEmail,
-      name: meta.name || meta.full_name || ADMIN_DISPLAY_NAME,
+      name:
+        meta.name ||
+        meta.full_name ||
+        meta.display_name ||
+        sbUser.email ||
+        ADMIN_DISPLAY_NAME,
       role: 'admin_officer',
     },
   };

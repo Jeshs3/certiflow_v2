@@ -168,7 +168,7 @@ export const SAMPLE_BIRTH_DATA: BirthCertificateData = {
     registryNo: '2023-081602',
     remarksAnnotation: 'OFFICE OF THE MUNICIPAL CIVIL REGISTRAR - SAGBAYAN, BOHOL',
     weightAtBirth: '3250',
-    multipleBirthOrder: '',
+    multipleBirthOrder: 'N/A',
     multipleBirthSpecify: '',
     motherFirstName: 'MARIA CLARA',
     motherMiddleName: 'BAUTISTA',

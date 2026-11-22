@@ -403,7 +403,9 @@ export const PhilippineColbPrintOverlay: React.FC<Props> = ({
         </div>
         {/* 5b. IF MULTIPLE BIRTH, CHILD WAS */}
         <div className="colb-field center" style={{ top: '80.0mm', left: '55.0mm', width: '47.0mm', height: '5.0mm', fontSize: '8.5pt' }}>
-          {formData.multipleBirthChildWas || '—'}
+          {formData.typeOfBirth?.toLowerCase() === 'single'
+            ? 'N/A'
+            : formData.multipleBirthChildWas || '—'}
         </div>
         {/* 5c. BIRTH ORDER */}
         <div className="colb-field center" style={{ top: '80.0mm', left: '106.0mm', width: '52.0mm', height: '5.0mm', fontSize: '8.5pt' }}>
@@ -578,9 +580,16 @@ export const PhilippineColbPrintOverlay: React.FC<Props> = ({
           </div>
         )}
         {formData.attendantType === '5' && (
-          <div className="colb-field center" style={{ top: '187.0mm', left: '158.0mm', width: '5.0mm', height: '4.0mm', fontSize: '9pt', color: '#000000' }}>
-            ✓
-          </div>
+          <>
+            <div className="colb-field center" style={{ top: '187.0mm', left: '158.0mm', width: '5.0mm', height: '4.0mm', fontSize: '9pt', color: '#000000' }}>
+              ✓
+            </div>
+            {formData.attendantOtherSpecify && (
+              <div className="colb-field" style={{ top: '187.0mm', left: '181.0mm', width: '25.0mm', height: '4.0mm', fontSize: '7.5pt', color: '#000000' }}>
+                {formData.attendantOtherSpecify}
+              </div>
+            )}
+          </>
         )}
 
         {/* 21b. Certification text time */}

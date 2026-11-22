@@ -50,6 +50,7 @@ import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X } from
 import {
   downloadPdfBytes,
   generatePdfFromTemplate,
+  getHardcopyDataOnlyYOffsetPt,
   getStoredConfig,
   PDF_CONFIG_UPDATED_EVENT,
   resolveFieldValue,
@@ -1054,7 +1055,10 @@ export default function App() {
                                 field.minFontSize || 5.5
                               )
                           : baseFontSize;
-                        const topPt = dim.height - field.y - fontSize * 0.85;
+                        const hardcopyYOffset = printDataOnly
+                          ? getHardcopyDataOnlyYOffsetPt('ph-colb-102')
+                          : 0;
+                        const topPt = dim.height - (field.y + hardcopyYOffset) - fontSize * 0.85;
                         const transformX =
                           field.isCheckbox || field.textAlign === 'center'
                             ? 'translateX(-50%)'
@@ -1174,7 +1178,10 @@ export default function App() {
                                 field.minFontSize || 5.5
                               )
                           : baseFontSize;
-                        const topPt = dim.height - field.y - fontSize * 0.85;
+                        const hardcopyYOffset = printDataOnly
+                          ? getHardcopyDataOnlyYOffsetPt('ph-com-97')
+                          : 0;
+                        const topPt = dim.height - (field.y + hardcopyYOffset) - fontSize * 0.85;
                         const transformX =
                           field.isCheckbox || field.textAlign === 'center'
                             ? 'translateX(-50%)'

@@ -78,7 +78,7 @@ export interface ColbDetails {
   weightAtBirth?: string; // Item 6
   typeOfBirth?: string; // Item 5a e.g. Single, Twin, Triplet
   multipleBirthChildWas?: string; // Item 5b e.g. First, Second, Third
-  multipleBirthOrder?: '1' | '2' | '3' | ''; // Item 5b
+  multipleBirthOrder?: '1' | '2' | '3' | 'N/A' | ''; // Item 5b
   multipleBirthSpecify?: string;
   
   // Mother specifics (Items 7 - 13)

@@ -770,7 +770,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     placeholder="Barangay, Sagbayan, Bohol"
                     value={currentCom.delayedAffiantResidence || ''}
                     onChange={(e) => updateCom('delayedAffiantResidence', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
                 <div>
@@ -892,7 +892,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     placeholder="Sagbayan, Bohol"
                     value={currentCom.delayedSwornPlace || ''}
                     onChange={(e) => updateCom('delayedSwornPlace', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
                 <div>
@@ -923,7 +923,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                       placeholder="Place"
                       value={currentCom.delayedAffiantCtcPlace || ''}
                       onChange={(e) => updateCom('delayedAffiantCtcPlace', e.target.value)}
-                      className={inputClass}
+                      className={`${inputClass} uppercase`}
                     />
                   </div>
                 </div>
@@ -954,7 +954,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     placeholder="Municipal Hall, Sagbayan, Bohol"
                     value={currentCom.delayedAdminOfficerAddress || ''}
                     onChange={(e) => updateCom('delayedAdminOfficerAddress', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
               </div>
@@ -1000,7 +1000,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={groom.firstName ?? ''}
                   onChange={(e) => updateGroom('firstName', e.target.value)}
                   placeholder="e.g. JUAN CARLOS"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>First Name *</span>
               </div>
@@ -1010,7 +1010,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={groom.middleName ?? ''}
                   onChange={(e) => updateGroom('middleName', e.target.value)}
                   placeholder="e.g. MENDOZA"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>Middle Name</span>
               </div>
@@ -1020,7 +1020,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={groom.lastName ?? ''}
                   onChange={(e) => updateGroom('lastName', e.target.value)}
                   placeholder="e.g. DELA CRUZ"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>Last Name *</span>
               </div>
@@ -1040,7 +1040,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={groom.fullName ?? ''}
                 onChange={(e) => updateGroom('fullName', e.target.value)}
                 placeholder="JUAN CARLOS MENDOZA DELA CRUZ"
-                className={`${inputClass} font-semibold`}
+                className={`${inputClass} uppercase font-semibold`}
               />
             </div>
           </fieldset>
@@ -1087,7 +1087,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={groom.placeOfBirth ?? ''}
                   onChange={(e) => updateGroom('placeOfBirth', e.target.value)}
                   placeholder="City/Municipality, Province, Country"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>Separate City, Province, Country with commas</span>
               </div>
@@ -1111,7 +1111,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={currentCom.husbandResidence ?? groom.currentAddress ?? ''}
                 onChange={(e) => updateCom('husbandResidence', e.target.value)}
                 placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
             </div>
 
@@ -1154,7 +1154,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.husbandFatherFirstName ?? ''}
                     onChange={(e) => updateCom('husbandFatherFirstName', e.target.value)}
                     placeholder="e.g. ROBERTO"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>First Name</span>
                 </div>
@@ -1164,7 +1164,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.husbandFatherMiddleName ?? ''}
                     onChange={(e) => updateCom('husbandFatherMiddleName', e.target.value)}
                     placeholder="e.g. GARCIA"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Middle Name</span>
                 </div>
@@ -1174,7 +1174,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.husbandFatherLastName ?? ''}
                     onChange={(e) => updateCom('husbandFatherLastName', e.target.value)}
                     placeholder="e.g. DELA CRUZ"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Last Name</span>
                 </div>
@@ -1203,7 +1203,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.husbandMotherMaidenFirstName ?? ''}
                     onChange={(e) => updateCom('husbandMotherMaidenFirstName', e.target.value)}
                     placeholder="e.g. TERESA"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>First Name</span>
                 </div>
@@ -1213,7 +1213,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.husbandMotherMaidenMiddleName ?? ''}
                     onChange={(e) => updateCom('husbandMotherMaidenMiddleName', e.target.value)}
                     placeholder="e.g. CASTRO"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Middle Name</span>
                 </div>
@@ -1223,7 +1223,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.husbandMotherMaidenLastName ?? ''}
                     onChange={(e) => updateCom('husbandMotherMaidenLastName', e.target.value)}
                     placeholder="e.g. MENDOZA"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Maiden Last Name</span>
                 </div>
@@ -1257,7 +1257,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.husbandConsentPerson ?? ''}
                   onChange={(e) => updateCom('husbandConsentPerson', e.target.value)}
                   placeholder="First Middle Last"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
 
@@ -1280,7 +1280,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={currentCom.husbandConsentResidence ?? ''}
                 onChange={(e) => updateCom('husbandConsentResidence', e.target.value)}
                 placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
             </div>
           </fieldset>
@@ -1303,7 +1303,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={bride.firstName ?? ''}
                   onChange={(e) => updateBride('firstName', e.target.value)}
                   placeholder="e.g. MARIA CLARA"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>First Name *</span>
               </div>
@@ -1313,7 +1313,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={bride.middleName ?? ''}
                   onChange={(e) => updateBride('middleName', e.target.value)}
                   placeholder="e.g. BAUTISTA"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>Middle Name</span>
               </div>
@@ -1323,7 +1323,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={bride.lastName ?? ''}
                   onChange={(e) => updateBride('lastName', e.target.value)}
                   placeholder="e.g. SANTOS"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>Last Name *</span>
               </div>
@@ -1343,7 +1343,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={bride.fullName ?? ''}
                 onChange={(e) => updateBride('fullName', e.target.value)}
                 placeholder="MARIA CLARA BAUTISTA SANTOS"
-                className={`${inputClass} font-semibold`}
+                className={`${inputClass} uppercase font-semibold`}
               />
             </div>
           </fieldset>
@@ -1390,7 +1390,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={bride.placeOfBirth ?? ''}
                   onChange={(e) => updateBride('placeOfBirth', e.target.value)}
                   placeholder="City/Municipality, Province, Country"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
                 <span className={subLabelClass}>Separate City, Province, Country with commas</span>
               </div>
@@ -1414,7 +1414,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={currentCom.wifeResidence ?? bride.currentAddress ?? ''}
                 onChange={(e) => updateCom('wifeResidence', e.target.value)}
                 placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
             </div>
 
@@ -1457,7 +1457,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.wifeFatherFirstName ?? ''}
                     onChange={(e) => updateCom('wifeFatherFirstName', e.target.value)}
                     placeholder="e.g. RAMON"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>First Name</span>
                 </div>
@@ -1467,7 +1467,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.wifeFatherMiddleName ?? ''}
                     onChange={(e) => updateCom('wifeFatherMiddleName', e.target.value)}
                     placeholder="e.g. LOPEZ"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Middle Name</span>
                 </div>
@@ -1477,7 +1477,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.wifeFatherLastName ?? ''}
                     onChange={(e) => updateCom('wifeFatherLastName', e.target.value)}
                     placeholder="e.g. SANTOS"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Last Name</span>
                 </div>
@@ -1506,7 +1506,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.wifeMotherMaidenFirstName ?? ''}
                     onChange={(e) => updateCom('wifeMotherMaidenFirstName', e.target.value)}
                     placeholder="e.g. ISABEL"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>First Name</span>
                 </div>
@@ -1516,7 +1516,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.wifeMotherMaidenMiddleName ?? ''}
                     onChange={(e) => updateCom('wifeMotherMaidenMiddleName', e.target.value)}
                     placeholder="e.g. FLORES"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Middle Name</span>
                 </div>
@@ -1526,7 +1526,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.wifeMotherMaidenLastName ?? ''}
                     onChange={(e) => updateCom('wifeMotherMaidenLastName', e.target.value)}
                     placeholder="e.g. BAUTISTA"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                   <span className={subLabelClass}>Maiden Last Name</span>
                 </div>
@@ -1560,7 +1560,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.wifeConsentPerson ?? ''}
                   onChange={(e) => updateCom('wifeConsentPerson', e.target.value)}
                   placeholder="First Middle Last"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
 
@@ -1583,7 +1583,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={currentCom.wifeConsentResidence ?? ''}
                 onChange={(e) => updateCom('wifeConsentResidence', e.target.value)}
                 placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
             </div>
           </fieldset>
@@ -1637,7 +1637,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={marriage.placeOfMarriage ?? ''}
                 onChange={(e) => updateMarriage('placeOfMarriage', e.target.value)}
                 placeholder="e.g. Sagbayan Parish Church"
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
             </div>
 
@@ -1651,7 +1651,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={marriage.cityMunicipality ?? ''}
                   onChange={(e) => updateMarriage('cityMunicipality', e.target.value)}
                   placeholder="e.g. Sagbayan"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
 
@@ -1662,7 +1662,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={marriage.provinceState ?? ''}
                   onChange={(e) => updateMarriage('provinceState', e.target.value)}
                   placeholder="e.g. Bohol"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
 
@@ -1675,7 +1675,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={marriage.country ?? ''}
                   onChange={(e) => updateMarriage('country', e.target.value)}
                   placeholder="e.g. Philippines"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
             </div>
@@ -1689,7 +1689,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 value={currentCom.placeOfMarriage ?? ''}
                 onChange={(e) => updateCom('placeOfMarriage', e.target.value)}
                 placeholder="e.g. Sagbayan Parish Church, Sagbayan, Bohol"
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
               <span className={subLabelClass}>
                 Auto-composed from Venue, City &amp; Province above, or customize directly
@@ -1761,7 +1761,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={marriage.officiantName ?? ''}
                   onChange={(e) => updateMarriage('officiantName', e.target.value)}
                   placeholder="e.g. REV. FR. BERNARDO M. TORRES"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
             </div>
@@ -1795,7 +1795,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.witness1 ?? additional.witness1Name ?? ''}
                   onChange={(e) => updateAdditional('witness1Name', e.target.value)}
                   placeholder="e.g. ROBERTO MENDEZ DELA CRUZ"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
 
@@ -1806,7 +1806,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.witness2 ?? additional.witness2Name ?? ''}
                   onChange={(e) => updateAdditional('witness2Name', e.target.value)}
                   placeholder="e.g. ELENA BAUTISTA SANTOS"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
             </div>
@@ -1819,7 +1819,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.witness3 ?? ''}
                   onChange={(e) => updateCom('witness3', e.target.value)}
                   placeholder="e.g. MARCUS AURELIUS VANCE"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
 
@@ -1830,7 +1830,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.witness4 ?? ''}
                   onChange={(e) => updateCom('witness4', e.target.value)}
                   placeholder="e.g. CHARLOTTE GRACE STERLING"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
             </div>
@@ -1856,7 +1856,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={additional.preparedBy ?? ''}
                   onChange={(e) => updateAdditional('preparedBy', e.target.value)}
                   placeholder="e.g. CARMINA R. REYES"
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
             </div>
@@ -1975,7 +1975,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     value={currentCom.licenseIssuedPlace ?? ''}
                     onChange={(e) => updateCom('licenseIssuedPlace', e.target.value)}
                     placeholder="e.g. Sagbayan, Bohol"
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
               </div>
@@ -2002,7 +2002,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   value={currentCom.solemnizingOfficerName ?? ''}
                   onChange={(e) => updateCom('solemnizingOfficerName', e.target.value)}
                   placeholder="e.g. REV. FR. BERNARDO M. TORRES"
-                  className={`${inputClass} font-semibold`}
+                  className={`${inputClass} uppercase font-semibold`}
                 />
               </div>
 
@@ -2048,52 +2048,70 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 <span className="text-[11px] font-bold text-purple-800 uppercase block">
                   21. Received By (LCRO Staff)
                 </span>
-                <input
-                  type="text"
-                  value={currentCom.receivedByName ?? ''}
-                  onChange={(e) => updateCom('receivedByName', e.target.value)}
-                  placeholder="Name: CARMINA R. REYES"
-                  className={inputClass}
-                />
-                <input
-                  type="text"
-                  value={currentCom.receivedByTitle ?? ''}
-                  onChange={(e) => updateCom('receivedByTitle', e.target.value)}
-                  placeholder="Title: RECORDS CLERK"
-                  className={inputClass}
-                />
-                <input
-                  type="date"
-                  value={currentCom.receivedByDate ?? ''}
-                  onChange={(e) => updateCom('receivedByDate', e.target.value)}
-                  className={inputClass}
-                />
+                <div>
+                  <label className={labelClass}>Name in Print</label>
+                  <input
+                    type="text"
+                    value={currentCom.receivedByName ?? ''}
+                    onChange={(e) => updateCom('receivedByName', e.target.value)}
+                    placeholder="Name: CARMINA R. REYES"
+                    className={`${inputClass} uppercase`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Title or Position</label>
+                  <input
+                    type="text"
+                    value={currentCom.receivedByTitle ?? ''}
+                    onChange={(e) => updateCom('receivedByTitle', e.target.value)}
+                    placeholder="Title: RECORDS CLERK"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Date</label>
+                  <input
+                    type="date"
+                    value={currentCom.receivedByDate ?? ''}
+                    onChange={(e) => updateCom('receivedByDate', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-lg border border-purple-700/30 space-y-2.5">
                 <span className="text-[11px] font-bold text-purple-800 uppercase block">
                   22. Registered By (Civil Registrar)
                 </span>
-                <input
-                  type="text"
-                  value={currentCom.registeredByName ?? ''}
-                  onChange={(e) => updateCom('registeredByName', e.target.value)}
-                  placeholder="Name: ATTY. GREGORIO L. SANTOS"
-                  className={`${inputClass} font-semibold`}
-                />
-                <input
-                  type="text"
-                  value={currentCom.registeredByTitle ?? ''}
-                  onChange={(e) => updateCom('registeredByTitle', e.target.value)}
-                  placeholder="Title: MUNICIPAL CIVIL REGISTRAR"
-                  className={inputClass}
-                />
-                <input
-                  type="date"
-                  value={currentCom.registeredByDate ?? ''}
-                  onChange={(e) => updateCom('registeredByDate', e.target.value)}
-                  className={inputClass}
-                />
+                <div>
+                  <label className={labelClass}>Name in Print</label>
+                  <input
+                    type="text"
+                    value={currentCom.registeredByName ?? ''}
+                    onChange={(e) => updateCom('registeredByName', e.target.value)}
+                    placeholder="Name: ATTY. GREGORIO L. SANTOS"
+                    className={`${inputClass} uppercase font-semibold`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Title or Position</label>
+                  <input
+                    type="text"
+                    value={currentCom.registeredByTitle ?? ''}
+                    onChange={(e) => updateCom('registeredByTitle', e.target.value)}
+                    className={inputClass}
+                    placeholder="Title: MUNICIPAL CIVIL REGISTRAR"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Date</label>
+                  <input
+                    type="date"
+                    value={currentCom.registeredByDate ?? ''}
+                    onChange={(e) => updateCom('registeredByDate', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
             </div>
           </fieldset>

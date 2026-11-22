@@ -485,7 +485,12 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       [child.placeOfBirth, child.cityMunicipality, child.provinceState].filter(Boolean).join(', '),
                     ],
                     ['5a. Type of Birth', additional.birthType],
-                    ['5b. Multiple Birth Order', currentColb.multipleBirthOrder],
+                    [
+                      '5b. Multiple Birth Order',
+                      (additional.birthType || currentColb.typeOfBirth || '').toLowerCase() === 'single'
+                        ? 'N/A'
+                        : currentColb.multipleBirthOrder,
+                    ],
                     ['5c. Birth Order', currentColb.birthOrder || additional.birthOrder],
                     ['6. Weight at Birth', currentColb.weightAtBirth ? `${currentColb.weightAtBirth} grams` : ''],
                   ],
@@ -743,7 +748,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     placeholder="Barangay, Sagbayan, Bohol"
                     value={currentColb.delayedAffiantResidence || ''}
                     onChange={(e) => updateColb('delayedAffiantResidence', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
               </div>
@@ -777,7 +782,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     placeholder="Sagbayan, Bohol"
                     value={currentColb.delayedApplicantPlace || ''}
                     onChange={(e) => updateColb('delayedApplicantPlace', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
                 <div>
@@ -797,7 +802,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     placeholder="Name of attendant"
                     value={currentColb.delayedAttendantName || ''}
                     onChange={(e) => updateColb('delayedAttendantName', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
                 <div>
@@ -807,7 +812,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     placeholder="Address of attendant"
                     value={currentColb.delayedAttendantAddress || ''}
                     onChange={(e) => updateColb('delayedAttendantAddress', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
                 <div>
@@ -895,7 +900,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     placeholder="Sagbayan, Bohol"
                     value={currentColb.delayedSwornPlace || ''}
                     onChange={(e) => updateColb('delayedSwornPlace', e.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} uppercase`}
                   />
                 </div>
                 <div>
@@ -1091,7 +1096,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
               placeholder="Name of Hospital / Clinic / Institution or House No., Street, Barangay"
               value={child.placeOfBirth}
               onChange={(e) => updateChild('placeOfBirth', e.target.value)}
-              className={inputClass}
+              className={`${inputClass} uppercase`}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -1126,13 +1131,19 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                 <label className={labelClass}>5a. Type of Birth</label>
                 <select
                   {...getFocusProps('child.birthType')}
-                  value={additional.birthType || 'Single'}
+                  value={additional.birthType || ''}
                   onChange={(e) => {
-                    const nextType = e.target.value as 'Single' | 'Twin' | 'Triplet' | 'Multiple';
+                    const nextType = e.target.value as '' | 'Single' | 'Twin' | 'Triplet' | 'Multiple';
                     const isNextSingle = nextType === 'Single';
-                    const defaultOrder = isNextSingle
+                    const existingNonSingleOrder =
+                      currentColb.multipleBirthOrder && currentColb.multipleBirthOrder !== 'N/A'
+                        ? currentColb.multipleBirthOrder
+                        : '';
+                    const defaultOrder = !nextType
                       ? ''
-                      : currentColb.multipleBirthOrder ||
+                      : isNextSingle
+                      ? 'N/A'
+                      : existingNonSingleOrder ||
                         (multipleBirthChildNumber === 1
                           ? '1'
                           : multipleBirthChildNumber === 2
@@ -1146,15 +1157,18 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       },
                       colb: {
                         ...currentColb,
-                        multipleBirthOrder: defaultOrder as '' | '1' | '2' | '3',
+                        multipleBirthOrder: defaultOrder as '' | '1' | '2' | '3' | 'N/A',
                         ...(isNextSingle
-                          ? { multipleBirthChildWas: '', multipleBirthSpecify: '' }
+                          ? { multipleBirthChildWas: 'N/A', multipleBirthSpecify: '' }
+                          : currentColb.multipleBirthChildWas === 'N/A'
+                          ? { multipleBirthChildWas: '' }
                           : {}),
                       },
                     });
                   }}
                   className={inputClass}
                 >
+                  <option value="">-- Select Type --</option>
                   <option value="Single">1 Single</option>
                   <option value="Twin">2 Twin</option>
                   <option value="Triplet">3 Triplet</option>
@@ -1166,15 +1180,25 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                 <label className={labelClass}>5b. Multiple Order</label>
                 <select
                   {...getFocusProps('child.multipleBirthOrder')}
-                  value={currentColb.multipleBirthOrder || ''}
+                  value={
+                    additional.birthType === 'Single'
+                      ? 'N/A'
+                      : currentColb.multipleBirthOrder || ''
+                  }
                   disabled={!additional.birthType || additional.birthType === 'Single'}
                   onChange={(e) => updateColb('multipleBirthOrder', e.target.value)}
-                  className={`${inputClass} disabled:opacity-50 disabled:bg-slate-50`}
+                  className={`${inputClass} disabled:opacity-60 disabled:bg-slate-50`}
                 >
-                  <option value="">N/A (Single)</option>
-                  <option value="1">1 First</option>
-                  <option value="2">2 Second</option>
-                  <option value="3">3 Third / Others</option>
+                  {additional.birthType === 'Single' ? (
+                    <option value="N/A">N/A</option>
+                  ) : (
+                    <>
+                      <option value="">-- Select Order --</option>
+                      <option value="1">1 First</option>
+                      <option value="2">2 Second</option>
+                      <option value="3">3 Third / Others</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -1376,7 +1400,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
               placeholder="House No., Street, Barangay"
               value={currentColb.motherResidenceStreet || ''}
               onChange={(e) => updateColb('motherResidenceStreet', e.target.value)}
-              className={inputClass}
+              className={`${inputClass} uppercase`}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -1547,7 +1571,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
               placeholder={currentColb.motherResidenceStreet || 'Complete address'}
               value={currentColb.fatherResidenceStreet ?? ''}
               onChange={(e) => updateColb('fatherResidenceStreet', e.target.value)}
-              className={inputClass}
+              className={`${inputClass} uppercase`}
             />
           </fieldset>
 
@@ -1645,7 +1669,27 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   key={item.id}
                   type="button"
                   {...getFocusProps('attendant.type')}
-                  onClick={() => updateColb('attendantType', item.id)}
+                  onClick={() => {
+                    const attendantLabelMap: Record<string, string> = {
+                      '1': 'Physician',
+                      '2': 'Nurse',
+                      '3': 'Midwife',
+                      '4': 'Hilot',
+                      '5': 'Others',
+                    };
+                    onChange({
+                      ...data,
+                      additional: {
+                        ...additional,
+                        attendantAtBirth: attendantLabelMap[item.id] || additional.attendantAtBirth,
+                      },
+                      colb: {
+                        ...currentColb,
+                        attendantType: item.id as ColbDetails['attendantType'],
+                        ...(item.id !== '5' ? { attendantOtherSpecify: '' } : {}),
+                      },
+                    });
+                  }}
                   className={`py-2 px-2.5 text-xs font-medium rounded-lg border transition-colors ${
                     currentColb.attendantType === item.id
                       ? 'bg-emerald-50 text-emerald-950 border-[#348e38]'
@@ -1656,6 +1700,19 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                 </button>
               ))}
             </div>
+            {currentColb.attendantType === '5' && (
+              <div className="pt-1">
+                <label className={labelClass}>Specify Other Attendant at Birth</label>
+                <input
+                  type="text"
+                  {...getFocusProps('attendant.otherSpecify')}
+                  placeholder="e.g. Barangay Health Worker / Mother / Relative"
+                  value={currentColb.attendantOtherSpecify || ''}
+                  onChange={(e) => updateColb('attendantOtherSpecify', e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            )}
           </fieldset>
 
           <fieldset className={fieldsetClass}>
@@ -1713,7 +1770,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                 placeholder="Sagbayan Rural Health Unit, Sagbayan, Bohol"
                 value={currentColb.attendantAddress || ''}
                 onChange={(e) => updateColb('attendantAddress', e.target.value)}
-                className={inputClass}
+                className={`${inputClass} uppercase`}
               />
             </div>
           </fieldset>
@@ -1751,7 +1808,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   placeholder={currentColb.motherResidenceStreet || 'Address'}
                   value={currentColb.informantAddress ?? ''}
                   onChange={(e) => updateColb('informantAddress', e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
               <div>
@@ -1792,27 +1849,83 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   className={inputClass}
                 />
               </div>
-              <div>
-                <label className={labelClass}>24. Received By</label>
-                <input
-                  type="text"
-                  {...getFocusProps('registry.receivedByName')}
-                  placeholder="ATTY. GREGORIO L. SANTOS"
-                  value={currentColb.receivedByName ?? ''}
-                  onChange={(e) => updateColb('receivedByName', e.target.value)}
-                  className={`${inputClass} uppercase`}
-                />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="p-3 bg-slate-50 rounded-lg border border-[#348e38]/30 space-y-2.5">
+                <span className="text-[11px] font-bold text-[#246b27] uppercase block">
+                  24. Received By
+                </span>
+                <div>
+                  <label className={labelClass}>Name in Print</label>
+                  <input
+                    type="text"
+                    {...getFocusProps('registry.receivedByName')}
+                    placeholder="ATTY. GREGORIO L. SANTOS"
+                    value={currentColb.receivedByName ?? ''}
+                    onChange={(e) => updateColb('receivedByName', e.target.value)}
+                    className={`${inputClass} uppercase`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Title or Position</label>
+                  <input
+                    type="text"
+                    {...getFocusProps('registry.receivedByTitle')}
+                    placeholder="Records Clerk"
+                    value={currentColb.receivedByTitle ?? ''}
+                    onChange={(e) => updateColb('receivedByTitle', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Date</label>
+                  <input
+                    type="date"
+                    {...getFocusProps('registry.receivedByDate')}
+                    value={currentColb.receivedByDate ?? ''}
+                    onChange={(e) => updateColb('receivedByDate', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>25. Registered By (Civil Registrar)</label>
-                <input
-                  type="text"
-                  {...getFocusProps('registry.registeredByName')}
-                  placeholder={currentColb.receivedByName || 'Civil Registrar Name'}
-                  value={currentColb.registeredByName ?? ''}
-                  onChange={(e) => updateColb('registeredByName', e.target.value)}
-                  className={`${inputClass} uppercase`}
-                />
+
+              <div className="p-3 bg-slate-50 rounded-lg border border-[#348e38]/30 space-y-2.5">
+                <span className="text-[11px] font-bold text-[#246b27] uppercase block">
+                  25. Registered By (Civil Registrar)
+                </span>
+                <div>
+                  <label className={labelClass}>Name in Print</label>
+                  <input
+                    type="text"
+                    {...getFocusProps('registry.registeredByName')}
+                    placeholder={currentColb.receivedByName || 'Civil Registrar Name'}
+                    value={currentColb.registeredByName ?? ''}
+                    onChange={(e) => updateColb('registeredByName', e.target.value)}
+                    className={`${inputClass} uppercase`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Title or Position</label>
+                  <input
+                    type="text"
+                    {...getFocusProps('registry.registeredByTitle')}
+                    placeholder="Municipal Civil Registrar"
+                    value={currentColb.registeredByTitle ?? ''}
+                    onChange={(e) => updateColb('registeredByTitle', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Date</label>
+                  <input
+                    type="date"
+                    {...getFocusProps('registry.registeredByDate')}
+                    value={currentColb.registeredByDate ?? ''}
+                    onChange={(e) => updateColb('registeredByDate', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
             </div>
           </fieldset>
@@ -1872,7 +1985,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   placeholder="Atty. Gregorio L. Santos"
                   value={currentColb.affidavitPaternityAdminOfficer || ''}
                   onChange={(e) => updateColb('affidavitPaternityAdminOfficer', e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} uppercase`}
                 />
               </div>
             </div>
