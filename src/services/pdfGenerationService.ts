@@ -9,6 +9,7 @@ import { PdfTemplateConfig, PdfTemplateFieldMapping } from '../types/pdfMapping'
 import { PH_COLB_102_CONFIG } from '../config/pdfTemplates/phColb102.config';
 import { PH_COM_97_CONFIG } from '../config/pdfTemplates/phCom97.config';
 import { COLB_DATA_BINDINGS, parseDateComponents } from '../utils/dataBinding';
+import { formatDateMMMMddYYYY } from '../utils/certificateUtils';
 
 const STORAGE_PREFIX = 'certiflow_pdf_config_';
 export const PDF_CONFIG_UPDATED_EVENT = 'certiflow-pdf-config-updated';
@@ -179,6 +180,42 @@ export function resolveFieldValue(
     return '';
   }
 
+  const page1FatherName =
+    [colb?.fatherFirstName, colb?.fatherMiddleName, colb?.fatherLastName].filter(Boolean).join(' ') ||
+    data.father?.fullName ||
+    '';
+  const page1MotherName =
+    [colb?.motherFirstName, colb?.motherMiddleName, colb?.motherLastName].filter(Boolean).join(' ') ||
+    data.mother?.fullName ||
+    '';
+  const page1ChildName =
+    [data.child?.firstName, data.child?.middleName, data.child?.lastName].filter(Boolean).join(' ') ||
+    data.child?.fullName ||
+    '';
+  const page1BirthDateFormatted = formatDateMMMMddYYYY(data.child?.dateOfBirth);
+  const page1BirthPlace = [
+    data.child?.placeOfBirth || data.additional?.hospitalFacility,
+    data.child?.cityMunicipality,
+    data.child?.provinceState,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  if (field.id === 'page2_paternity_father_sig_name' || field.id === 'page2_paternity_by_father') {
+    const val =
+      colb?.paternityFatherSignatory !== undefined
+        ? colb.paternityFatherSignatory
+        : page1FatherName || colb?.paternityFatherName || '';
+    return sanitizePdfText(val.toUpperCase());
+  }
+  if (field.id === 'page2_paternity_mother_sig_name' || field.id === 'page2_paternity_by_mother') {
+    const val =
+      colb?.paternityMotherSignatory !== undefined
+        ? colb.paternityMotherSignatory
+        : page1MotherName || colb?.paternityMotherName || '';
+    return sanitizePdfText(val.toUpperCase());
+  }
+
   const isSelfDelayed =
     colb?.delayedApplicantType === 'my_birth' ||
     (colb?.delayedApplicantType as string | undefined) === 'my_own';
@@ -206,7 +243,12 @@ export function resolveFieldValue(
       return !isSelfDelayed ? 'X' : '';
     }
     if (dataPath === 'colb.delayedParentsStatus') {
-      return colb?.delayedParentsStatus === sampleValue ? 'X' : '';
+      const effectiveDelayedParentsStatus =
+        colb?.delayedParentsStatus ||
+        (colb?.parentsMarried === false || colb?.parentsMarriageDatePlace?.includes('NOT MARRIED')
+          ? 'not_married'
+          : 'married');
+      return effectiveDelayedParentsStatus === sampleValue ? 'X' : '';
     }
   }
 
@@ -357,6 +399,7 @@ export function resolveFieldValue(
       };
       return sanitizePdfText(
         colb?.multipleBirthChildWas ||
+          (rawOrder === '3' && colb?.multipleBirthSpecify ? colb.multipleBirthSpecify : undefined) ||
           orderMap[rawOrder] ||
           colb?.multipleBirthSpecify ||
           rawOrder
@@ -434,40 +477,68 @@ export function resolveFieldValue(
       return colb?.attendantType === '5'
         ? sanitizePdfText(colb?.attendantOtherSpecify || '')
         : '';
-    case 'colb.attendantTime':
-      return sanitizePdfText(colb?.attendantTime || data.child?.timeOfBirth || '');
+    case 'colb.attendantTime': {
+      const raw = (colb?.attendantTime || data.child?.timeOfBirth || '').trim();
+      if (!raw) return '';
+      if (/\b(am|pm)\b/i.test(raw)) return sanitizePdfText(raw.toUpperCase());
+      return sanitizePdfText(
+        colb?.attendantTimeAmPm ? `${raw} ${colb.attendantTimeAmPm.toUpperCase()}` : raw
+      );
+    }
     case 'colb.attendantSignatureName':
       return sanitizePdfText((colb?.attendantSignatureName || '').toUpperCase());
     case 'colb.attendantAddress':
       return sanitizePdfText((colb?.attendantAddress || '').toUpperCase());
     case 'colb.attendantDate':
-      return sanitizePdfText(colb?.attendantDate || data.child?.dateOfBirth || '');
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.attendantDate));
     case 'colb.informantSignatureName':
       return sanitizePdfText((colb?.informantSignatureName || data.father?.fullName || '').toUpperCase());
     case 'colb.informantAddress':
       return sanitizePdfText((colb?.informantAddress || colb?.motherResidenceStreet || '').toUpperCase());
+    case 'colb.informantDate':
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.informantDate));
     case 'colb.preparedByName':
       return sanitizePdfText((colb?.preparedByName || '').toUpperCase());
     case 'colb.preparedByDate':
-      return sanitizePdfText(colb?.preparedByDate || data.child?.dateOfBirth || '');
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.preparedByDate));
     case 'colb.receivedByName':
       return sanitizePdfText((colb?.receivedByName || '').toUpperCase());
+    case 'colb.receivedByDate':
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.receivedByDate));
     case 'colb.registeredByName':
       return sanitizePdfText((colb?.registeredByName || colb?.receivedByName || '').toUpperCase());
     case 'colb.registeredByTitle':
       return sanitizePdfText(colb?.registeredByTitle || colb?.receivedByTitle || '');
     case 'colb.registeredByDate':
-      return sanitizePdfText(colb?.registeredByDate || colb?.receivedByDate || '');
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.registeredByDate || colb?.receivedByDate));
     case 'colb.paternityFatherName':
-      return sanitizePdfText((colb?.paternityFatherName || data.father?.fullName || '').toUpperCase());
+      return sanitizePdfText((page1FatherName || colb?.paternityFatherName || '').toUpperCase());
     case 'colb.paternityMotherName':
-      return sanitizePdfText((colb?.paternityMotherName || data.mother?.fullName || '').toUpperCase());
+      return sanitizePdfText((page1MotherName || colb?.paternityMotherName || '').toUpperCase());
     case 'colb.paternityChildName':
-      return sanitizePdfText((colb?.paternityChildName || data.child?.fullName || '').toUpperCase());
+      return sanitizePdfText((page1ChildName || colb?.paternityChildName || '').toUpperCase());
     case 'colb.paternityBirthDate':
-      return sanitizePdfText(colb?.paternityBirthDate || data.child?.dateOfBirth || '');
+      return sanitizePdfText(page1BirthDateFormatted || formatDateMMMMddYYYY(colb?.paternityBirthDate) || '');
     case 'colb.paternityBirthPlace':
-      return sanitizePdfText((colb?.paternityBirthPlace || data.child?.placeOfBirth || '').toUpperCase());
+      return sanitizePdfText((page1BirthPlace || colb?.paternityBirthPlace || '').toUpperCase());
+    case 'colb.paternityFatherSignatory':
+      return sanitizePdfText(
+        (colb?.paternityFatherSignatory !== undefined
+          ? colb.paternityFatherSignatory
+          : page1FatherName || colb?.paternityFatherName || ''
+        ).toUpperCase()
+      );
+    case 'colb.paternityMotherSignatory':
+      return sanitizePdfText(
+        (colb?.paternityMotherSignatory !== undefined
+          ? colb.paternityMotherSignatory
+          : page1MotherName || colb?.paternityMotherName || ''
+        ).toUpperCase()
+      );
+    case 'colb.paternityFatherCtcDate':
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.paternityFatherCtcDate));
+    case 'colb.paternityMotherCtcDate':
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.paternityMotherCtcDate));
     case 'colb.paternityFatherCtcPlace':
       return sanitizePdfText((colb?.paternityFatherCtcPlace || colb?.paternitySwornPlace || '').toUpperCase());
     case 'colb.paternitySwornPlace':
@@ -504,24 +575,110 @@ export function resolveFieldValue(
       return sanitizePdfText((colb?.delayedAttendantName || '').toUpperCase());
     case 'colb.delayedAttendantAddress':
       return sanitizePdfText((colb?.delayedAttendantAddress || '').toUpperCase());
+    case 'colb.delayedAffiantCtcDate':
+      return sanitizePdfText(formatDateMMMMddYYYY(colb?.delayedAffiantCtcDate));
     case 'colb.delayedParentsMarriageDate': {
-      if (colb?.delayedParentsStatus !== 'married') return '';
-      const raw = colb?.delayedParentsMarriageDatePlace || colb?.parentsMarriageDatePlace || '';
-      const splitIdx = raw.indexOf(' - ');
-      const dateStr = splitIdx >= 0 ? raw.slice(0, splitIdx).trim() : raw.split('-')[0]?.trim() || '';
-      return sanitizePdfText(dateStr);
+      const effectiveDelayedParentsStatus =
+        colb?.delayedParentsStatus ||
+        (colb?.parentsMarried === false || colb?.parentsMarriageDatePlace?.includes('NOT MARRIED')
+          ? 'not_married'
+          : 'married');
+      if (effectiveDelayedParentsStatus !== 'married') return '';
+      const raw = colb?.delayedParentsMarriageDatePlace || '';
+      if (raw.trim()) {
+        const atIdx = raw.toLowerCase().indexOf(' at ');
+        const dashIdx = raw.indexOf(' - ');
+        const dateStr =
+          atIdx >= 0
+            ? raw.slice(0, atIdx).trim()
+            : dashIdx >= 0
+            ? raw.slice(0, dashIdx).trim()
+            : raw.split('-')[0]?.trim() || '';
+        if (dateStr) return sanitizePdfText(dateStr);
+      }
+      const discreteDate = [
+        colb?.parentsMarriageDateMonth,
+        colb?.parentsMarriageDateDay,
+        colb?.parentsMarriageDateYear,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      if (discreteDate) return sanitizePdfText(discreteDate);
+      const item20Raw = colb?.parentsMarriageDatePlace || '';
+      if (item20Raw && !item20Raw.includes('NOT MARRIED')) {
+        const dashIdx = item20Raw.indexOf(' - ');
+        const atIdx = item20Raw.toLowerCase().indexOf(' at ');
+        const dateStr =
+          dashIdx >= 0
+            ? item20Raw.slice(0, dashIdx).trim()
+            : atIdx >= 0
+            ? item20Raw.slice(0, atIdx).trim()
+            : item20Raw.split('-')[0]?.trim() || '';
+        return sanitizePdfText(dateStr);
+      }
+      return '';
     }
     case 'colb.delayedParentsMarriagePlace': {
-      if (colb?.delayedParentsStatus !== 'married') return '';
-      const raw = colb?.delayedParentsMarriageDatePlace || colb?.parentsMarriageDatePlace || '';
-      const splitIdx = raw.indexOf(' - ');
-      const placeStr = splitIdx >= 0 ? raw.slice(splitIdx + 3).trim() : '';
-      return sanitizePdfText(placeStr.toUpperCase());
+      const effectiveDelayedParentsStatus =
+        colb?.delayedParentsStatus ||
+        (colb?.parentsMarried === false || colb?.parentsMarriageDatePlace?.includes('NOT MARRIED')
+          ? 'not_married'
+          : 'married');
+      if (effectiveDelayedParentsStatus !== 'married') return '';
+      const raw = colb?.delayedParentsMarriageDatePlace || '';
+      if (raw.trim()) {
+        const atIdx = raw.toLowerCase().indexOf(' at ');
+        const dashIdx = raw.indexOf(' - ');
+        const placeStr =
+          atIdx >= 0
+            ? raw.slice(atIdx + 4).trim()
+            : dashIdx >= 0
+            ? raw.slice(dashIdx + 3).trim()
+            : raw.includes('-')
+            ? raw.split('-').slice(1).join('-').trim()
+            : '';
+        if (placeStr) return sanitizePdfText(placeStr.toUpperCase());
+      }
+      const discretePlace = [
+        colb?.parentsMarriagePlaceCity,
+        colb?.parentsMarriagePlaceProvince,
+        colb?.parentsMarriagePlaceCountry,
+      ]
+        .filter(Boolean)
+        .join(', ')
+        .trim();
+      if (discretePlace) return sanitizePdfText(discretePlace.toUpperCase());
+      const item20Raw = colb?.parentsMarriageDatePlace || '';
+      if (item20Raw && !item20Raw.includes('NOT MARRIED')) {
+        const dashIdx = item20Raw.indexOf(' - ');
+        const atIdx = item20Raw.toLowerCase().indexOf(' at ');
+        const placeStr =
+          dashIdx >= 0
+            ? item20Raw.slice(dashIdx + 3).trim()
+            : atIdx >= 0
+            ? item20Raw.slice(atIdx + 4).trim()
+            : item20Raw.includes('-')
+            ? item20Raw.split('-').slice(1).join('-').trim()
+            : '';
+        return sanitizePdfText(placeStr.toUpperCase());
+      }
+      return '';
     }
-    case 'colb.delayedFatherName':
-      return colb?.delayedParentsStatus === 'not_married'
-        ? sanitizePdfText((colb?.delayedFatherName || data.father?.fullName || '').toUpperCase())
+    case 'colb.delayedFatherName': {
+      const effectiveDelayedParentsStatus =
+        colb?.delayedParentsStatus ||
+        (colb?.parentsMarried === false || colb?.parentsMarriageDatePlace?.includes('NOT MARRIED')
+          ? 'not_married'
+          : 'married');
+      const fatherFallback =
+        [colb?.fatherFirstName, colb?.fatherMiddleName, colb?.fatherLastName].filter(Boolean).join(' ') ||
+        data.father?.fullName ||
+        '';
+      return effectiveDelayedParentsStatus === 'not_married'
+        ? sanitizePdfText((colb?.delayedFatherName || colb?.paternityFatherName || fatherFallback).toUpperCase())
         : '';
+    }
     case 'colb.delayedApplicantMarriedTo':
       return sanitizePdfText((colb?.delayedApplicantMarriedTo || '').toUpperCase());
     case 'colb.delayedSwornPlace':
@@ -599,7 +756,13 @@ export function resolveMarriageFieldValue(
   const mMonth = com?.marriageMonth || mDateParts.monthName || '';
   const mYear = com?.marriageYear || mDateParts.year || '';
 
-  // Enforce Page 2 Delayed Registration Affidavit gating
+  // Enforce Page 2 Affidavit gating
+  if (
+    field.category === 'page2_solemnizing_affidavit' &&
+    com?.affidavitSolemnizingOfficerEnabled === false
+  ) {
+    return '';
+  }
   const isDelayedMarriageField =
     field.category === 'page2_delayed_marriage' || dataPath.startsWith('com.delayed');
   if (isDelayedMarriageField && !com?.affidavitDelayedReg) {
@@ -723,16 +886,25 @@ export function resolveMarriageFieldValue(
       return sanitizePdfText((com?.husbandMotherMaidenLastName || '').toUpperCase());
     case 'com.husbandMotherCitizenship':
       return sanitizePdfText((com?.husbandMotherCitizenship || '').toUpperCase());
-    case 'com.husbandConsentPerson_first':
-      return sanitizePdfText(splitFullNameParts(com?.husbandConsentPerson).first.toUpperCase());
-    case 'com.husbandConsentPerson_middle':
-      return sanitizePdfText(splitFullNameParts(com?.husbandConsentPerson).middle.toUpperCase());
-    case 'com.husbandConsentPerson_last':
-      return sanitizePdfText(splitFullNameParts(com?.husbandConsentPerson).last.toUpperCase());
+    case 'com.husbandConsentPerson_first': {
+      const raw = (com?.husbandConsentPerson || '').trim();
+      if (!raw || raw.toUpperCase() === 'N/A') return '';
+      return sanitizePdfText(splitFullNameParts(raw).first.toUpperCase());
+    }
+    case 'com.husbandConsentPerson_middle': {
+      const raw = (com?.husbandConsentPerson || '').trim();
+      if (!raw || raw.toUpperCase() === 'N/A') return 'N/A';
+      return sanitizePdfText(splitFullNameParts(raw).middle.toUpperCase());
+    }
+    case 'com.husbandConsentPerson_last': {
+      const raw = (com?.husbandConsentPerson || '').trim();
+      if (!raw || raw.toUpperCase() === 'N/A') return '';
+      return sanitizePdfText(splitFullNameParts(raw).last.toUpperCase());
+    }
     case 'com.husbandConsentRelationship':
-      return sanitizePdfText((com?.husbandConsentRelationship || '').toUpperCase());
+      return sanitizePdfText((com?.husbandConsentRelationship?.trim() || 'N/A').toUpperCase());
     case 'com.husbandConsentResidence':
-      return sanitizePdfText((com?.husbandConsentResidence || '').toUpperCase());
+      return sanitizePdfText((com?.husbandConsentResidence?.trim() || 'N/A').toUpperCase());
 
     // Wife
     case 'com.wifeFirstName':
@@ -791,27 +963,67 @@ export function resolveMarriageFieldValue(
       return sanitizePdfText((com?.wifeMotherMaidenLastName || '').toUpperCase());
     case 'com.wifeMotherCitizenship':
       return sanitizePdfText((com?.wifeMotherCitizenship || '').toUpperCase());
-    case 'com.wifeConsentPerson_first':
-      return sanitizePdfText(splitFullNameParts(com?.wifeConsentPerson).first.toUpperCase());
-    case 'com.wifeConsentPerson_middle':
-      return sanitizePdfText(splitFullNameParts(com?.wifeConsentPerson).middle.toUpperCase());
-    case 'com.wifeConsentPerson_last':
-      return sanitizePdfText(splitFullNameParts(com?.wifeConsentPerson).last.toUpperCase());
+    case 'com.wifeConsentPerson_first': {
+      const raw = (com?.wifeConsentPerson || '').trim();
+      if (!raw || raw.toUpperCase() === 'N/A') return '';
+      return sanitizePdfText(splitFullNameParts(raw).first.toUpperCase());
+    }
+    case 'com.wifeConsentPerson_middle': {
+      const raw = (com?.wifeConsentPerson || '').trim();
+      if (!raw || raw.toUpperCase() === 'N/A') return 'N/A';
+      return sanitizePdfText(splitFullNameParts(raw).middle.toUpperCase());
+    }
+    case 'com.wifeConsentPerson_last': {
+      const raw = (com?.wifeConsentPerson || '').trim();
+      if (!raw || raw.toUpperCase() === 'N/A') return '';
+      return sanitizePdfText(splitFullNameParts(raw).last.toUpperCase());
+    }
     case 'com.wifeConsentRelationship':
-      return sanitizePdfText((com?.wifeConsentRelationship || '').toUpperCase());
+      return sanitizePdfText((com?.wifeConsentRelationship?.trim() || 'N/A').toUpperCase());
     case 'com.wifeConsentResidence':
-      return sanitizePdfText((com?.wifeConsentResidence || '').toUpperCase());
+      return sanitizePdfText((com?.wifeConsentResidence?.trim() || 'N/A').toUpperCase());
 
     // Ceremony & Solemnizing Officer
     case 'com.placeOfMarriage':
       return sanitizePdfText(
         (
           com?.placeOfMarriage ||
-          [marriage?.placeOfMarriage, marriage?.cityMunicipality, marriage?.provinceState]
+          [
+            com?.placeOfMarriageVenue || marriage?.placeOfMarriage,
+            com?.placeOfMarriageCity || marriage?.cityMunicipality,
+            com?.placeOfMarriageProvince || marriage?.provinceState,
+          ]
             .filter(Boolean)
             .join(', ')
         ).toUpperCase()
       );
+    case 'com.placeOfMarriageVenue': {
+      const legacyParts = (com?.placeOfMarriage || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const val =
+        com?.placeOfMarriageVenue ||
+        marriage?.placeOfMarriage ||
+        (legacyParts.length >= 2 ? legacyParts.slice(0, -2).join(', ') || legacyParts[0] : legacyParts[0]) ||
+        '';
+      return sanitizePdfText(val.toUpperCase());
+    }
+    case 'com.placeOfMarriageCity': {
+      const legacyParts = (com?.placeOfMarriage || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const val =
+        com?.placeOfMarriageCity ||
+        marriage?.cityMunicipality ||
+        (legacyParts.length >= 2 ? legacyParts[legacyParts.length - 2] : '') ||
+        '';
+      return sanitizePdfText(val.toUpperCase());
+    }
+    case 'com.placeOfMarriageProvince': {
+      const legacyParts = (com?.placeOfMarriage || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const val =
+        com?.placeOfMarriageProvince ||
+        marriage?.provinceState ||
+        (legacyParts.length >= 3 ? legacyParts[legacyParts.length - 1] : legacyParts.length === 2 ? legacyParts[1] : '') ||
+        '';
+      return sanitizePdfText(val.toUpperCase());
+    }
     case 'com.marriageDay':
       return sanitizePdfText(mDay);
     case 'com.marriageMonth':
@@ -830,12 +1042,28 @@ export function resolveMarriageFieldValue(
       return sanitizePdfText((com?.solemnizingOfficerName || marriage?.officiantName || '').toUpperCase());
     case 'com.solemnizingOfficerOffice':
       return sanitizePdfText(
-        (marriage?.placeOfMarriage || com?.solemnizingOfficerReligion || com?.placeOfMarriage || '').toUpperCase()
+        (
+          com?.solemnizingOfficerOffice ||
+          com?.placeOfMarriageVenue ||
+          marriage?.placeOfMarriage ||
+          com?.solemnizingOfficerReligion ||
+          com?.placeOfMarriage ||
+          ''
+        ).toUpperCase()
       );
     case 'com.solemnizingOfficerAddress': {
-      const addr = [marriage?.cityMunicipality, marriage?.provinceState].filter(Boolean).join(', ');
+      const addr = [
+        com?.placeOfMarriageCity || marriage?.cityMunicipality,
+        com?.placeOfMarriageProvince || marriage?.provinceState,
+      ]
+        .filter(Boolean)
+        .join(', ');
       return sanitizePdfText(
-        (addr || [com?.cityMunicipality, com?.province].filter(Boolean).join(', ')).toUpperCase()
+        (
+          com?.solemnizingOfficerAddress ||
+          addr ||
+          [com?.cityMunicipality, com?.province].filter(Boolean).join(', ')
+        ).toUpperCase()
       );
     }
     case 'com.solemnizing2cParty1':
@@ -862,9 +1090,27 @@ export function resolveMarriageFieldValue(
       return sanitizePdfText((com?.witness3 || '').toUpperCase());
     case 'com.witness4':
       return sanitizePdfText((com?.witness4 || '').toUpperCase());
+    case 'com.witness5':
+      return sanitizePdfText((com?.witness5 || '').toUpperCase());
+    case 'com.witness6':
+      return sanitizePdfText((com?.witness6 || '').toUpperCase());
+    case 'com.witness7':
+      return sanitizePdfText((com?.witness7 || '').toUpperCase());
+    case 'com.witness8':
+      return sanitizePdfText((com?.witness8 || '').toUpperCase());
 
+    case 'com.marriageLicenseNo':
+      return (com?.licenseType || 'license') === 'license'
+        ? sanitizePdfText(com?.marriageLicenseNo || '')
+        : '';
+    case 'com.licenseIssuedDate':
+      return (com?.licenseType || 'license') === 'license'
+        ? sanitizePdfText(com?.licenseIssuedDate || '')
+        : '';
     case 'com.licenseIssuedPlace':
-      return sanitizePdfText((com?.licenseIssuedPlace || '').toUpperCase());
+      return (com?.licenseType || 'license') === 'license'
+        ? sanitizePdfText((com?.licenseIssuedPlace || '').toUpperCase())
+        : '';
     case 'com.receivedByName':
       return sanitizePdfText((com?.receivedByName || '').toUpperCase());
     case 'com.registeredByName':

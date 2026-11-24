@@ -8,6 +8,7 @@ import { BirthCertificateData, CertificateStyle } from '../types/certificate';
 import { ShieldAlert } from 'lucide-react';
 import { parseDateComponents } from '../utils/dataBinding';
 import { splitFullNameParts } from '../services/pdfGenerationService';
+import { formatDateMMMMddYYYY } from '../utils/certificateUtils';
 
 interface PhilippineColbTemplateProps {
   data: BirthCertificateData;
@@ -149,6 +150,37 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
     const showPaternity = !blankMode && Boolean(colb?.affidavitPaternityEnabled);
     const showDelayed = !blankMode && Boolean(colb?.affidavitDelayedRegEnabled);
 
+    const page1FatherFull =
+      [fatherFirst, fatherMiddle, fatherLast].filter(Boolean).join(' ') || father.fullName || '';
+    const page1MotherFull =
+      [motherFirst, motherMiddle, motherLast].filter(Boolean).join(' ') || mother.fullName || '';
+    const page1ChildFull =
+      [childFirst, childMiddle, childLast].filter(Boolean).join(' ') || child.fullName || '';
+    const page1BirthDateFormatted = formatDateMMMMddYYYY(child.dateOfBirth);
+    const page1BirthPlace = [
+      child.placeOfBirth || additional.hospitalFacility,
+      child.cityMunicipality,
+      child.provinceState,
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    const paternityNarrativeFather = page1FatherFull || colb?.paternityFatherName || '';
+    const paternityNarrativeMother = page1MotherFull || colb?.paternityMotherName || '';
+    const paternityNarrativeChild = page1ChildFull || colb?.paternityChildName || '';
+    const paternityNarrativeBirthDate =
+      page1BirthDateFormatted || formatDateMMMMddYYYY(colb?.paternityBirthDate) || '';
+    const paternityNarrativeBirthPlace = page1BirthPlace || colb?.paternityBirthPlace || '';
+
+    const paternityFatherSig =
+      colb?.paternityFatherSignatory !== undefined
+        ? colb.paternityFatherSignatory
+        : paternityNarrativeFather;
+    const paternityMotherSig =
+      colb?.paternityMotherSignatory !== undefined
+        ? colb.paternityMotherSignatory
+        : paternityNarrativeMother;
+
     const renderGreenBlank = (
       value: string | undefined,
       blankWidth: string,
@@ -214,8 +246,10 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   AFFIDAVIT OF ACKNOWLEDGMENT/ADMISSION OF PATERNITY
                 </h2>
                 <div className="grid grid-cols-2 gap-4 text-[7.5pt] font-helvetica not-italic text-slate-700 pt-[1px] pb-[1px] leading-none">
-                  <span className="text-center">(For births before 3 August 1988)</span>
-                  <span className="text-center text-slate-900">
+                  <span className="text-center text-slate-600">
+                    (For births before 3 August 1988)
+                  </span>
+                  <span className="text-center text-slate-700">
                     (For births on or after 3 August 1988)
                   </span>
                 </div>
@@ -226,21 +260,21 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="space-y-1 text-left leading-relaxed">
                   <div className="flex items-baseline gap-1 w-full pl-8">
                     <span className="shrink-0 whitespace-nowrap">I/We,</span>
-                    {renderGreenBlank(showPaternity ? (colb?.paternityFatherName || father.fullName).toUpperCase() : '', '_________________________', 'flex-1')}
+                    {renderGreenBlank(showPaternity ? paternityNarrativeFather.toUpperCase() : '', '_________________________', 'flex-1')}
                     <span className="shrink-0 whitespace-nowrap">and</span>
-                    {renderGreenBlank(showPaternity ? (colb?.paternityMotherName || mother.fullName).toUpperCase() : '', '_________________________', 'flex-1')}
+                    {renderGreenBlank(showPaternity ? paternityNarrativeMother.toUpperCase() : '', '_________________________', 'flex-1')}
                     <span className="shrink-0">,</span>
                   </div>
                   <div className="flex items-baseline gap-1 w-full">
                     <span className="shrink-0 whitespace-nowrap">of legal age, am/are the natural father and/or mother of</span>
-                    {renderGreenBlank(showPaternity ? (colb?.paternityChildName || child.fullName).toUpperCase() : '', '_________________________', 'flex-1')}
+                    {renderGreenBlank(showPaternity ? paternityNarrativeChild.toUpperCase() : '', '_________________________', 'flex-1')}
                     <span className="shrink-0 whitespace-nowrap">, who was</span>
                   </div>
                   <div className="flex items-baseline gap-1 w-full">
                     <span className="shrink-0 whitespace-nowrap">born on</span>
-                    {renderCmBlank(showPaternity ? (colb?.paternityBirthDate || child.dateOfBirth) : '', '4.2cm')}
+                    {renderCmBlank(showPaternity ? paternityNarrativeBirthDate : '', '4.2cm')}
                     <span className="shrink-0 whitespace-nowrap">at</span>
-                    {renderCmBlank(showPaternity ? (colb?.paternityBirthPlace || child.placeOfBirth).toUpperCase() : '', '7.5cm')}
+                    {renderCmBlank(showPaternity ? paternityNarrativeBirthPlace.toUpperCase() : '', '7.5cm')}
                     <span className="shrink-0">.</span>
                   </div>
                 </div>
@@ -251,22 +285,22 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
             </div>
 
-            {/* Father & Mother Signature Lines (Green blank lines, zero label padding) */}
-            <div className="grid grid-cols-2 gap-8 text-center shrink-0">
-              <div>
+            {/* Father & Mother Signature Lines (separated by vertical border line) */}
+            <div className="grid grid-cols-2 border-t border-[#348e38]/40 pt-1.5 text-center shrink-0">
+              <div className="border-r border-[#348e38]/50 pr-4">
                 <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
-                  {showPaternity && (colb?.paternityFatherName || father.fullName) ? (
-                    <span data-print-value="true">{(colb?.paternityFatherName || father.fullName).toUpperCase()}</span>
+                  {showPaternity && paternityFatherSig ? (
+                    <span data-print-value="true">{paternityFatherSig.toUpperCase()}</span>
                   ) : ''}
                 </div>
                 <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
                   (Signature Over Printed Name of Father)
                 </p>
               </div>
-              <div>
+              <div className="pl-4">
                 <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
-                  {showPaternity && (colb?.paternityMotherName || mother.fullName) ? (
-                    <span data-print-value="true">{(colb?.paternityMotherName || mother.fullName).toUpperCase()}</span>
+                  {showPaternity && paternityMotherSig ? (
+                    <span data-print-value="true">{paternityMotherSig.toUpperCase()}</span>
                   ) : ''}
                 </div>
                 <p className="text-[7.5pt] font-helvetica m-0 p-0 leading-tight text-slate-600">
@@ -294,13 +328,13 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
               <div className="flex items-baseline gap-1 w-full">
                 {renderGreenBlank(
-                  showPaternity ? (colb?.paternityFatherName || father.fullName).toUpperCase() : '',
+                  showPaternity ? paternityFatherSig.toUpperCase() : '',
                   '_________________________',
                   'flex-1'
                 )}
                 <span className="shrink-0 whitespace-nowrap">and</span>
                 {renderGreenBlank(
-                  showPaternity ? (colb?.paternityMotherName || mother.fullName).toUpperCase() : '',
+                  showPaternity ? paternityMotherSig.toUpperCase() : '',
                   '_________________________',
                   'flex-1'
                 )}
@@ -310,7 +344,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <span className="shrink-0 whitespace-nowrap">CTC/valid ID</span>
                 {renderGreenBlank(showPaternity ? colb?.affidavitPaternityFatherCtc : '', '__________________', 'flex-[1.2]')}
                 <span className="shrink-0 whitespace-nowrap">issued on</span>
-                {renderGreenBlank(showPaternity ? colb?.paternityFatherCtcDate : '', '________________', 'flex-1')}
+                {renderGreenBlank(showPaternity ? formatDateMMMMddYYYY(colb?.paternityFatherCtcDate) : '', '________________', 'flex-1')}
                 <span className="shrink-0 whitespace-nowrap">at</span>
               </div>
               <div className="flex items-baseline gap-1 w-full">
@@ -322,10 +356,10 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
             </div>
 
-            {/* Administering Officer Signature Lines (2x2 Green blank lines, zero label padding) */}
-            <div className="grid grid-cols-2 gap-8 text-center shrink-0">
+            {/* Administering Officer Signature Lines (separated by border lines) */}
+            <div className="grid grid-cols-2 border-t border-[#348e38]/40 pt-1.5 text-center shrink-0">
               {/* Left Column: Signature & Name in Print */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 border-r border-[#348e38]/50 pr-4">
                 <div>
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
                     {''}
@@ -347,7 +381,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
 
               {/* Right Column: Position / Title / Designation & Address */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 pl-4">
                 <div>
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
                     {showPaternity && colb?.paternityAdminOfficerTitle ? (
@@ -513,9 +547,60 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 {/* Item 4: 0.5cm after 'were:', 0.5cm between checkbox and words, parallel checkboxes, justified */}
                 <li className="leading-relaxed">
                   {(() => {
-                    const marriageStr = colb?.delayedParentsMarriageDatePlace || colb?.parentsMarriageDatePlace || '';
-                    const [datePart, placePart] = marriageStr.split(' at ');
-                    const isDelayedNotMarried = colb?.delayedParentsStatus === 'not_married';
+                    const effectiveStatus =
+                      colb?.delayedParentsStatus ||
+                      (colb?.parentsMarried === false || colb?.parentsMarriageDatePlace?.includes('NOT MARRIED')
+                        ? 'not_married'
+                        : 'married');
+                    const isDelayedNotMarried = effectiveStatus === 'not_married';
+                    const rawMarriageStr =
+                      (colb?.delayedParentsMarriageDatePlace || '').trim() ||
+                      (!colb?.parentsMarriageDatePlace?.includes('NOT MARRIED')
+                        ? colb?.parentsMarriageDatePlace || ''
+                        : '');
+                    let datePart = '';
+                    let placePart = '';
+                    if (rawMarriageStr) {
+                      const atIdx = rawMarriageStr.toLowerCase().indexOf(' at ');
+                      const dashIdx = rawMarriageStr.indexOf(' - ');
+                      if (atIdx >= 0) {
+                        datePart = rawMarriageStr.slice(0, atIdx).trim();
+                        placePart = rawMarriageStr.slice(atIdx + 4).trim();
+                      } else if (dashIdx >= 0) {
+                        datePart = rawMarriageStr.slice(0, dashIdx).trim();
+                        placePart = rawMarriageStr.slice(dashIdx + 3).trim();
+                      } else if (rawMarriageStr.includes('-')) {
+                        const dashParts = rawMarriageStr.split('-');
+                        datePart = dashParts[0]?.trim() || '';
+                        placePart = dashParts.slice(1).join('-').trim();
+                      } else {
+                        datePart = rawMarriageStr;
+                      }
+                    }
+                    if (!datePart) {
+                      datePart = [
+                        colb?.parentsMarriageDateMonth,
+                        colb?.parentsMarriageDateDay,
+                        colb?.parentsMarriageDateYear,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                        .trim();
+                    }
+                    if (!placePart) {
+                      placePart = [
+                        colb?.parentsMarriagePlaceCity,
+                        colb?.parentsMarriagePlaceProvince,
+                        colb?.parentsMarriagePlaceCountry,
+                      ]
+                        .filter(Boolean)
+                        .join(', ')
+                        .trim();
+                    }
+                    const fatherFallbackName =
+                      [colb?.fatherFirstName, colb?.fatherMiddleName, colb?.fatherLastName]
+                        .filter(Boolean)
+                        .join(' ') || father.fullName;
                     return (
                       <div className="flex items-start w-full">
                         <span className="shrink-0 whitespace-nowrap" style={{ marginRight: '0.5cm' }}>
@@ -551,7 +636,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                                   father whose name is{' '}
                                   {renderCmBlank(
                                     showDelayed && isDelayedNotMarried
-                                      ? (colb?.delayedFatherName || colb?.paternityFatherName || father.fullName).toUpperCase()
+                                      ? (colb?.delayedFatherName || colb?.paternityFatherName || fatherFallbackName).toUpperCase()
                                       : '',
                                     '6.5cm'
                                   )}
@@ -611,9 +696,9 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 </div>
               </div>
 
-              {/* Affiant Signature Line (Right aligned below In truth whereof, 7.8cm) */}
-              <div className="flex justify-end pt-3 pr-2">
-                <div className="w-[7.8cm] text-center">
+              {/* Affiant Signature Line (Right aligned below In truth whereof, 7.8cm, bordered separation) */}
+              <div className="flex justify-end pt-2 border-t border-[#348e38]/35 pr-2">
+                <div className="w-[7.8cm] text-center border-l border-[#348e38]/40 pl-3">
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showDelayed && (colb?.delayedAffiantName || father.fullName) ? (
                       <span data-print-value="true">{(colb?.delayedAffiantName || father.fullName).toUpperCase()}</span>
@@ -642,17 +727,17 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <div className="text-justify [text-align-last:justify] leading-relaxed">
                 {renderCmBlank(showDelayed ? colb?.delayedAffiantCtc : '', '3.6cm')}{' '}
                 issued on{' '}
-                {renderCmBlank(showDelayed ? colb?.delayedAffiantCtcDate : '', '3.2cm')}{' '}
+                {renderCmBlank(showDelayed ? formatDateMMMMddYYYY(colb?.delayedAffiantCtcDate) : '', '3.2cm')}{' '}
                 at{' '}
                 {renderCmBlank(showDelayed ? (colb?.delayedAffiantCtcPlace || colb?.delayedSwornPlace || '').toUpperCase() : '', '7.5cm')}.
               </div>
             </div>
 
-            {/* Administering Officer Signature Lines (2x2 Green blank lines measuring 7.8cm, zero label padding) */}
-            <div className="grid grid-cols-2 gap-8 text-center shrink-0">
+            {/* Administering Officer Signature Lines (2x2 Green blank lines, separated by border lines) */}
+            <div className="grid grid-cols-2 border-t border-[#348e38]/40 pt-1.5 text-center shrink-0">
               {/* Left Column: Signature & Name in Print */}
-              <div className="space-y-1.5 w-[7.8cm] mx-auto">
-                <div>
+              <div className="space-y-1.5 border-r border-[#348e38]/50 pr-4">
+                <div className="w-[7.8cm] mx-auto">
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
                     {''}
                   </div>
@@ -660,7 +745,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                     (Signature of the Administering Officer)
                   </p>
                 </div>
-                <div>
+                <div className="w-[7.8cm] mx-auto">
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showDelayed && colb?.delayedAdminOfficerName ? (
                       <span data-print-value="true">{colb.delayedAdminOfficerName.toUpperCase()}</span>
@@ -673,8 +758,8 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               </div>
 
               {/* Right Column: Position / Title / Designation & Address */}
-              <div className="space-y-1.5 w-[7.8cm] mx-auto">
-                <div>
+              <div className="space-y-1.5 pl-4">
+                <div className="w-[7.8cm] mx-auto">
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900">
                     {showDelayed && colb?.delayedAdminOfficerTitle ? (
                       <span data-print-value="true">{colb.delayedAdminOfficerTitle}</span>
@@ -684,7 +769,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                     (Position / Title / Designation)
                   </p>
                 </div>
-                <div>
+                <div className="w-[7.8cm] mx-auto">
                   <div className="border-b border-[#348e38] text-[9pt] min-h-[16px] pb-0 font-bold font-helvetica text-slate-900 uppercase">
                     {showDelayed && colb?.delayedAdminOfficerAddress ? (
                       <span data-print-value="true">{colb.delayedAdminOfficerAddress.toUpperCase()}</span>
@@ -995,7 +1080,14 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                     <p data-print-value="true" className="font-helvetica font-bold text-[8pt] text-black border-b border-[#348e38] min-h-[12px] leading-none text-center truncate">
                       {(colb?.typeOfBirth || additional.birthType || '').toLowerCase() === 'single'
                         ? 'N/A'
-                        : colb?.multipleBirthChildWas || (colb?.multipleBirthOrder ? (colb.multipleBirthOrder === '1' ? 'First' : colb.multipleBirthOrder === '2' ? 'Second' : 'Third') : '')}
+                        : colb?.multipleBirthChildWas ||
+                          (colb?.multipleBirthOrder
+                            ? colb.multipleBirthOrder === '1'
+                              ? 'First'
+                              : colb.multipleBirthOrder === '2'
+                              ? 'Second'
+                              : colb.multipleBirthSpecify || 'Third'
+                            : '')}
                     </p>
                   </BoundBox>
                 </div>
@@ -1656,7 +1748,16 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   <BoundBox bindingId="attendant.time" token="{{attendant.time}}" className="inline-block" as="span">
                     <span className="font-helvetica font-bold underline px-1 text-black">
                       {!blankMode && (colb?.attendantTime || child.timeOfBirth) ? (
-                        <span data-print-value="true">{colb?.attendantTime || child.timeOfBirth}</span>
+                        <span data-print-value="true">
+                          {(() => {
+                            const raw = (colb?.attendantTime || child.timeOfBirth || '').trim();
+                            if (!raw) return '';
+                            if (/\b(am|pm)\b/i.test(raw)) return raw.toUpperCase();
+                            return colb?.attendantTimeAmPm
+                              ? `${raw} ${colb.attendantTimeAmPm.toUpperCase()}`
+                              : raw;
+                          })()}
+                        </span>
                       ) : (
                         '__________'
                       )}
@@ -1666,10 +1767,10 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 </div>
               </div>
 
-              {/* Attendant Signatures Grid matching image_c19b7345.png */}
-              <div className="grid grid-cols-12 gap-2 pt-0.5 font-helvetica">
+              {/* Attendant Signatures Grid with border separation */}
+              <div className="grid grid-cols-12 gap-2 pt-0.5 border-t border-[#348e38]/40 font-helvetica">
                 {/* Left 7 cols: Signature, Name in Print, Title or Position */}
-                <div className="col-span-7 space-y-0.5 min-w-0">
+                <div className="col-span-7 space-y-0.5 min-w-0 border-r border-[#348e38]/50 pr-2">
                   <div className="flex items-baseline gap-1">
                     <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
                     <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[12px] truncate">
@@ -1708,7 +1809,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                     <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
                     <BoundBox bindingId="attendant.date" token="{{attendant.date}}" className="flex-1 min-w-0">
                       <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                        {colb?.attendantDate || child.dateOfBirth || ''}
+                        {formatDateMMMMddYYYY(colb?.attendantDate)}
                       </span>
                     </BoundBox>
                   </div>
@@ -1732,7 +1833,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   I hereby certify that all information supplied are true and correct to my own knowledge and belief.
                 </p>
               </div>
-              <div className="space-y-0.5 font-helvetica pt-0.5">
+              <div className="space-y-0.5 font-helvetica pt-0.5 border-t border-[#348e38]/35">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
                   <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[13px] truncate">
@@ -1767,7 +1868,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
                   <BoundBox bindingId="informant.date" token="{{informant.date}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[13px] truncate">
-                      {colb?.informantDate || ''}
+                      {formatDateMMMMddYYYY(colb?.informantDate)}
                     </span>
                   </BoundBox>
                 </div>
@@ -1779,7 +1880,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <div className="h-[38px] shrink-0">
                 <span className="font-helvetica font-medium text-[8pt] uppercase block text-black leading-tight">23. PREPARED BY</span>
               </div>
-              <div className="space-y-0.5 font-helvetica pt-0.5">
+              <div className="space-y-0.5 font-helvetica pt-0.5 border-t border-[#348e38]/35">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
                   <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[13px] truncate">
@@ -1805,7 +1906,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
                   <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[13px] truncate">
-                    {colb?.preparedByDate || child.dateOfBirth || ''}
+                    {formatDateMMMMddYYYY(colb?.preparedByDate)}
                   </span>
                 </div>
               </div>
@@ -1820,7 +1921,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
             {/* 24. RECEIVED BY */}
             <div className="border-r border-[#348e38] pr-2 flex flex-col justify-between min-w-0">
               <span className="font-helvetica font-medium text-[8pt] uppercase block text-black">24. RECEIVED BY</span>
-              <div className="space-y-0.5 font-helvetica">
+              <div className="space-y-0.5 font-helvetica border-t border-[#348e38]/35 pt-0.5">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
                   <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[12px] truncate">
@@ -1847,7 +1948,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
                   <BoundBox bindingId="registry.receivedByDate" token="{{registry.receivedByDate}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                      {colb?.receivedByDate || ''}
+                      {formatDateMMMMddYYYY(colb?.receivedByDate)}
                     </span>
                   </BoundBox>
                 </div>
@@ -1859,7 +1960,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
               <span className="font-helvetica font-medium text-[8pt] uppercase block text-black truncate">
                 25. REGISTERED AT THE OFFICE OF THE CIVIL REGISTRAR
               </span>
-              <div className="space-y-0.5 font-helvetica">
+              <div className="space-y-0.5 font-helvetica border-t border-[#348e38]/35 pt-0.5">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Signature</span>
                   <span data-print-value="true" className="flex-1 min-w-0 border-b border-[#348e38] font-bold text-[8.5pt] uppercase text-black px-1 min-h-[12px] truncate">
@@ -1886,7 +1987,7 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                   <span className="text-[7.5pt] text-[#222222] whitespace-nowrap">Date</span>
                   <BoundBox bindingId="registry.registeredByDate" token="{{registry.registeredByDate}}" className="flex-1 min-w-0">
                     <span data-print-value="true" className="block border-b border-[#348e38] text-[8pt] text-black px-1 min-h-[12px] truncate">
-                      {colb?.registeredByDate || ''}
+                      {formatDateMMMMddYYYY(colb?.registeredByDate)}
                     </span>
                   </BoundBox>
                 </div>

@@ -9,10 +9,11 @@ import {
   AlertCircle,
   FolderOpen,
   ArrowRight,
+  Pencil,
 } from 'lucide-react';
 
 interface SavedDraftsViewProps {
-  onLoadDraft: (draft: SavedDraft) => void;
+  onLoadDraft: (draft: SavedDraft, startEditable?: boolean) => void;
   onNavigateToGenerator: (type: CertificateType) => void;
 }
 
@@ -171,10 +172,19 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                         >
                           <button
                             type="button"
-                            onClick={() => onLoadDraft(draft)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-sm bg-[#1D4ED8] hover:bg-[#1E40AF] text-white transition-colors cursor-pointer"
+                            onClick={() => onLoadDraft(draft, true)}
+                            title="Edit Page 1 & Page 2"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
                           >
-                            <span>Edit &amp; Preview</span>
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onLoadDraft(draft, false)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-sm bg-[#1D4ED8] hover:bg-[#1E40AF] text-white transition-colors cursor-pointer"
+                          >
+                            <span>Preview</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                           <button

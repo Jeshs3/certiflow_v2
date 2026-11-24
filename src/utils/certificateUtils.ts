@@ -108,6 +108,141 @@ export function formatDisplayDate(dateStr?: string, format: DateFormatOption = '
   }
 }
 
+const MONTHS_LONG = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function parseMonthIndex(monthInput?: string): number {
+  if (!monthInput) return -1;
+  const cleaned = monthInput.trim().toLowerCase();
+  if (!cleaned) return -1;
+  const numeric = parseInt(cleaned, 10);
+  if (!isNaN(numeric) && String(numeric) === cleaned && numeric >= 1 && numeric <= 12) {
+    return numeric - 1;
+  }
+  return MONTHS_LONG.findIndex(
+    (m) => m.toLowerCase() === cleaned || m.slice(0, 3).toLowerCase() === cleaned.slice(0, 3)
+  );
+}
+
+/**
+ * Normalize any date string (ISO YYYY-MM-DD, MM/DD/YYYY, or Month D, YYYY) to YYYY-MM-DD for <input type="date" />.
+ */
+export function toIsoDateInput(dateStr?: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  if (!trimmed) return '';
+
+  const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(trimmed);
+  if (isoMatch) {
+    const yyyy = isoMatch[1];
+    const mm = isoMatch[2].padStart(2, '0');
+    const dd = isoMatch[3].padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const slashMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+  if (slashMatch) {
+    const mm = slashMatch[1].padStart(2, '0');
+    const dd = slashMatch[2].padStart(2, '0');
+    const yyyy = slashMatch[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const textMatch = /^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/i.exec(trimmed);
+  if (textMatch) {
+    const mIdx = parseMonthIndex(textMatch[1]);
+    if (mIdx >= 0) {
+      const mm = String(mIdx + 1).padStart(2, '0');
+      const dd = textMatch[2].padStart(2, '0');
+      const yyyy = textMatch[3];
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Convert discrete Month, Day (including ordinals like "10th"), and Year into ISO YYYY-MM-DD.
+ */
+export function fromMonthDayYearToIso(month?: string, day?: string, year?: string): string {
+  const mIdx = parseMonthIndex(month);
+  const cleanDay = (day || '').replace(/(st|nd|rd|th)$/i, '').trim();
+  const dNum = parseInt(cleanDay, 10);
+  const yClean = (year || '').trim();
+  if (mIdx < 0 || isNaN(dNum) || dNum < 1 || dNum > 31 || !/^\d{4}$/.test(yClean)) {
+    return '';
+  }
+  return `${yClean}-${String(mIdx + 1).padStart(2, '0')}-${String(dNum).padStart(2, '0')}`;
+}
+
+/**
+ * Format a date string strictly as "MMMM dd, YYYY" (e.g., "August 05, 2023").
+ */
+export function formatDateMMMMddYYYY(dateStr?: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  if (!trimmed) return '';
+
+  const iso = toIsoDateInput(trimmed);
+  if (!iso) return trimmed;
+
+  const [yyyy, mmStr, ddStr] = iso.split('-');
+  const mIdx = parseInt(mmStr, 10) - 1;
+  const dNum = parseInt(ddStr, 10);
+  const monthName = MONTHS_LONG[mIdx];
+  if (!monthName || isNaN(dNum)) return trimmed;
+
+  return `${monthName} ${String(dNum).padStart(2, '0')}, ${yyyy}`;
+}
+
+/**
+ * Format day integer to ordinal string (e.g., 1 -> "1st", 2 -> "2nd", 10 -> "10th").
+ */
+export function toOrdinalDay(dayNum: number): string {
+  if (isNaN(dayNum) || dayNum < 1) return '';
+  const mod100 = dayNum % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${dayNum}th`;
+  switch (dayNum % 10) {
+    case 1:
+      return `${dayNum}st`;
+    case 2:
+      return `${dayNum}nd`;
+    case 3:
+      return `${dayNum}rd`;
+    default:
+      return `${dayNum}th`;
+  }
+}
+
+/**
+ * Parse an ISO YYYY-MM-DD date string into COLB template date components.
+ */
+export function parseIsoDateToColbParts(isoDate?: string): {
+  monthName: string;
+  day: string;
+  dayPadded: string;
+  dayOrdinal: string;
+  year: string;
+} | null {
+  const iso = toIsoDateInput(isoDate);
+  if (!iso) return null;
+  const [yyyy, mmStr, ddStr] = iso.split('-');
+  const mIdx = parseInt(mmStr, 10) - 1;
+  const dNum = parseInt(ddStr, 10);
+  const monthName = MONTHS_LONG[mIdx];
+  if (!monthName || isNaN(dNum)) return null;
+  return {
+    monthName,
+    day: String(dNum),
+    dayPadded: String(dNum).padStart(2, '0'),
+    dayOrdinal: toOrdinalDay(dNum),
+    year: yyyy,
+  };
+}
+
 /**
  * LocalStorage draft management
  */

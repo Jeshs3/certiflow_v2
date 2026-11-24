@@ -1,13 +1,13 @@
 import React from 'react';
 import { CertificateType, SavedDraft } from '../types/certificate';
 import { getSavedDrafts } from '../utils/certificateUtils';
-import { ArrowRight, ShieldAlert, Clock } from 'lucide-react';
+import { ArrowRight, ShieldAlert, Clock, Pencil } from 'lucide-react';
 
 interface DashboardViewProps {
   onSelectGenerator: (type: CertificateType) => void;
   onViewDrafts: () => void;
   onViewHelp?: () => void;
-  onLoadDraft: (draft: SavedDraft) => void;
+  onLoadDraft: (draft: SavedDraft, startEditable?: boolean) => void;
 }
 
 function formatDraftTimestamp(timestamp?: number): string {
@@ -199,17 +199,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         {formatDraftTimestamp(draft.updatedAt)}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onLoadDraft(draft);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold transition-colors cursor-pointer whitespace-nowrap"
-                        >
-                          <span>Open</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onLoadDraft(draft, true);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onLoadDraft(draft, false);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            <span>Open</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

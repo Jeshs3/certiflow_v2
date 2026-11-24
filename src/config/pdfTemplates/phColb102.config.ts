@@ -1020,7 +1020,7 @@ export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
       textAlign: 'left',
       fontFamily: 'HelveticaBold',
       dataPath: 'colb.attendantDate',
-      sampleValue: '2023-08-16',
+      sampleValue: 'August 16, 2023',
     },
 
     // Item 22: CERTIFICATION OF INFORMANT (left col x: 52 .. 317, y: 209 .. 324)
@@ -1356,7 +1356,7 @@ export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
       maxWidth: 236,
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
-      dataPath: 'colb.paternityFatherName',
+      dataPath: 'colb.paternityFatherSignatory',
       sampleValue: 'ROBERTO MENDEZ DELA CRUZ',
     },
     {
@@ -1372,7 +1372,7 @@ export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
       maxWidth: 236,
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
-      dataPath: 'colb.paternityMotherName',
+      dataPath: 'colb.paternityMotherSignatory',
       sampleValue: 'MARIA CLARA BAUTISTA SANTOS',
     },
     {
@@ -1436,7 +1436,7 @@ export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
       maxWidth: 165,
       textAlign: 'left',
       fontFamily: 'HelveticaBold',
-      dataPath: 'colb.paternityFatherName',
+      dataPath: 'colb.paternityFatherSignatory',
       sampleValue: 'ROBERTO M. DELA CRUZ',
     },
     {
@@ -1452,7 +1452,7 @@ export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
       maxWidth: 165,
       textAlign: 'left',
       fontFamily: 'HelveticaBold',
-      dataPath: 'colb.paternityMotherName',
+      dataPath: 'colb.paternityMotherSignatory',
       sampleValue: 'MARIA CLARA B. SANTOS',
     },
     {

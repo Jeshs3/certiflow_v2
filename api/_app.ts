@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import express from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
+import { getProvinces, getMunicipalities, getBarangays } from './philatlas.ts';
 
 const IS_PROD = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 
@@ -418,6 +419,72 @@ export function createApiApp(): Express {
       authProvider: 'supabase',
       authConfigured: isAuthConfigured(),
     });
+  });
+
+  // PhilAtlas Philippine Geographic Lookup (Provinces -> Municipalities/Cities -> Barangays)
+  app.get('/api/locations/provinces', async (_req: Request, res: Response) => {
+    try {
+      const provinces = await getProvinces();
+      res.json({ ok: true, provinces });
+    } catch (err) {
+      console.error('Failed to fetch PhilAtlas provinces:', err);
+      res.status(502).json({
+        ok: false,
+        error: 'Could not load Philippine provinces right now. Please try again or type manually.',
+      });
+    }
+  });
+
+  app.get('/api/locations/municipalities', async (req: Request, res: Response) => {
+    try {
+      const provincePath = typeof req.query.provincePath === 'string' ? req.query.provincePath : '';
+      const province = typeof req.query.province === 'string' ? req.query.province : '';
+      if (!provincePath && !province) {
+        res.status(400).json({ ok: false, error: 'Province is required.' });
+        return;
+      }
+      const result = await getMunicipalities({ provincePath, province });
+      res.json({ ok: true, ...result });
+    } catch (err) {
+      console.error('Failed to fetch PhilAtlas municipalities:', err);
+      const message = err instanceof Error && err.message === 'Province not found.'
+        ? 'Selected province was not found.'
+        : 'Could not load cities and municipalities for the selected province.';
+      res.status(err instanceof Error && err.message === 'Province not found.' ? 404 : 502).json({
+        ok: false,
+        error: message,
+      });
+    }
+  });
+
+  app.get('/api/locations/barangays', async (req: Request, res: Response) => {
+    try {
+      const municipalityPath =
+        typeof req.query.municipalityPath === 'string' ? req.query.municipalityPath : '';
+      const provincePath = typeof req.query.provincePath === 'string' ? req.query.provincePath : '';
+      const province = typeof req.query.province === 'string' ? req.query.province : '';
+      const municipality = typeof req.query.municipality === 'string' ? req.query.municipality : '';
+      if (!municipalityPath && (!municipality || (!provincePath && !province))) {
+        res.status(400).json({ ok: false, error: 'City or municipality is required.' });
+        return;
+      }
+      const result = await getBarangays({
+        municipalityPath,
+        provincePath,
+        province,
+        municipality,
+      });
+      res.json({ ok: true, ...result });
+    } catch (err) {
+      console.error('Failed to fetch PhilAtlas barangays:', err);
+      const message = err instanceof Error && err.message.includes('not found')
+        ? 'Selected city or municipality was not found.'
+        : 'Could not load barangays for the selected city or municipality.';
+      res.status(err instanceof Error && err.message.includes('not found') ? 404 : 502).json({
+        ok: false,
+        error: message,
+      });
+    }
   });
 
   // Admin Officer Authentication via Supabase Auth (Fail-closed, no hardcoded fallback password)

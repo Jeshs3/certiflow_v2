@@ -110,11 +110,15 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
   const hBirthPlace = parsePlaceParts(com?.husbandPlaceOfBirth || groom.placeOfBirth);
   const wBirthPlace = parsePlaceParts(com?.wifePlaceOfBirth || bride.placeOfBirth);
 
-  const parsePersonNameParts = (raw?: string) => {
-    if (blankMode || !raw) {
+  const parseConsentNameParts = (raw?: string) => {
+    if (blankMode) {
       return { first: '', middle: '', last: '' };
     }
-    const tokens = raw.trim().split(/\s+/).filter(Boolean);
+    const trimmed = (raw || '').trim();
+    if (!trimmed || trimmed.toUpperCase() === 'N/A') {
+      return { first: '', middle: 'N/A', last: '' };
+    }
+    const tokens = trimmed.split(/\s+/).filter(Boolean);
     if (tokens.length === 1) {
       return { first: tokens[0], middle: '', last: '' };
     }
@@ -128,8 +132,8 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
     };
   };
 
-  const hConsentName = parsePersonNameParts(com?.husbandConsentPerson);
-  const wConsentName = parsePersonNameParts(com?.wifeConsentPerson);
+  const hConsentName = parseConsentNameParts(com?.husbandConsentPerson);
+  const wConsentName = parseConsentNameParts(com?.wifeConsentPerson);
 
   const pv = (text?: string | null) => {
     if (blankMode || !text) return '\u00A0';
@@ -208,330 +212,346 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                   style={{ width: '4cm' }}
                   className="border-b border-dotted border-rose-700 flex items-end justify-center pb-0 leading-none font-semibold uppercase text-black min-h-[12px] truncate shrink-0"
                 >
-                  {'\u00A0'}
+                  {pv(val(com?.witness5))}
                 </div>
                 <div
                   style={{ width: '4cm' }}
                   className="border-b border-dotted border-rose-700 flex items-end justify-center pb-0 leading-none font-semibold uppercase text-black min-h-[12px] truncate shrink-0"
                 >
-                  {'\u00A0'}
+                  {pv(val(com?.witness6))}
                 </div>
                 <div
                   style={{ width: '4cm' }}
                   className="border-b border-dotted border-rose-700 flex items-end justify-center pb-0 leading-none font-semibold uppercase text-black min-h-[12px] truncate shrink-0"
                 >
-                  {'\u00A0'}
+                  {pv(val(com?.witness7))}
                 </div>
                 <div
                   style={{ width: '4cm' }}
                   className="border-b border-dotted border-rose-700 flex items-end justify-center pb-0 leading-none font-semibold uppercase text-black min-h-[12px] truncate shrink-0"
                 >
-                  {'\u00A0'}
+                  {pv(val(com?.witness8))}
                 </div>
               </div>
             </div>
           </div>
 
           {/* 2nd Slice (13.2 cm): AFFIDAVIT OF SOLEMNIZING OFFICER */}
-          <div
-            style={{ height: '13.2cm', minHeight: '13.2cm', maxHeight: '13.2cm' }}
-            className="relative z-20 border-b-2 border-rose-700 px-3 py-1 font-helvetica text-[7.2pt] text-black leading-[1.24] flex flex-col justify-between shrink-0 overflow-hidden"
-          >
-            <div>
-              <h2 className="text-center font-bold text-[9.5pt] text-black uppercase tracking-wide leading-tight mb-1">
-                AFFIDAVIT OF SOLEMNIZING OFFICER
-              </h2>
-              <div className="mb-1.5 space-y-0.5 text-[7.2pt] leading-[1.24] text-black">
-                <div style={{ textIndent: '1.5cm' }} className="text-justify [text-align-last:justify]">
-                  I,{' '}
-                  <span
-                    style={{ width: '4.4cm' }}
-                    className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom indent-0"
-                  >
-                    {pv(val(com?.solemnizingOfficerName || marriage.officiantName).toUpperCase())}
-                  </span>
-                  , of legal age, Solemnizing Officer of{' '}
-                  <span
-                    style={{ width: '3.9cm' }}
-                    className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom indent-0"
-                  >
-                    {pv(val(com?.placeOfMarriage || marriage.placeOfMarriage).toUpperCase())}
-                  </span>{' '}
-                  with address at
-                </div>
-                <div className="text-justify">
-                  <span
-                    style={{ width: '5.4cm' }}
-                    className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
-                  >
-                    {pv(val(com?.cityMunicipality).toUpperCase())}
-                  </span>
-                  , after having been sworn to in accordance with law, do hereby depose and say:
-                </div>
-              </div>
+          {(() => {
+            const showSolemnizing = !blankMode && com?.affidavitSolemnizingOfficerEnabled !== false;
+            const activeQual =
+              com?.solemnizingQualification ||
+              (com?.solemnizingOfficerName || marriage.officiantName ? '2a' : '');
+            const officerOffice =
+              com?.solemnizingOfficerOffice ||
+              com?.placeOfMarriageVenue ||
+              marriage.placeOfMarriage ||
+              '';
+            const officerAddr =
+              com?.solemnizingOfficerAddress ||
+              [
+                com?.placeOfMarriageCity || marriage.cityMunicipality,
+                com?.placeOfMarriageProvince || marriage.provinceState,
+              ]
+                .filter(Boolean)
+                .join(', ') ||
+              [com?.cityMunicipality, com?.province].filter(Boolean).join(', ');
+            const solemnizingHusband = [hFirst, hMiddle, hLast].filter(Boolean).join(' ');
+            const solemnizingWife = [wFirst, wMiddle, wLast].filter(Boolean).join(' ');
 
-              <p
-                style={{ marginBottom: '0.4cm' }}
-                className="text-justify text-[7.2pt] leading-[1.24] text-black"
-              >
-                1. That I have solemnized the marriage between{' '}
-                <span className="border-b border-rose-700 font-bold uppercase px-1.5">
-                  {[hFirst, hMiddle, hLast].filter(Boolean).length > 0 ? (
-                    <span data-print-value="true">{[hFirst, hMiddle, hLast].filter(Boolean).join(' ').toUpperCase()}</span>
-                  ) : (
-                    '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
-                  )}
-                </span>{' '}
-                and{' '}
-                <span className="border-b border-rose-700 font-bold uppercase px-1.5">
-                  {[wFirst, wMiddle, wLast].filter(Boolean).length > 0 ? (
-                    <span data-print-value="true">{[wFirst, wMiddle, wLast].filter(Boolean).join(' ').toUpperCase()}</span>
-                  ) : (
-                    '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
-                  )}
-                </span>
-                ;
-              </p>
-
-              <div className="space-y-0.5 text-[7.2pt] leading-[1.24] text-black">
-                <div className="flex items-start gap-1.5">
-                  <span className="shrink-0 w-3.5 leading-[0.5cm]">2</span>
-                  <CheckX sizeCm black checked={!blankMode && Boolean(com?.solemnizingOfficerName || marriage.officiantName)} />
-                  <div className="flex-1 flex items-start min-w-0">
-                    <span className="shrink-0 w-3.5">a.</span>
-                    <span className="flex-1 text-justify">
-                      That I have ascertained the qualifications of the contracting parties and have found no legal impediment for them to marry as required by Article 34 of the Family Code;
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-1.5">
-                  <span className="shrink-0 w-3.5" aria-hidden="true" />
-                  <CheckX sizeCm black checked={false} />
-                  <div className="flex-1 flex items-start min-w-0">
-                    <span className="shrink-0 w-3.5">b.</span>
-                    <span className="flex-1 text-justify">
-                      That this marriage was performed in articulo mortis or at the point of death;
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-1.5">
-                  <span className="shrink-0 w-3.5" aria-hidden="true" />
-                  <CheckX sizeCm black checked={false} />
-                  <div className="flex-1 flex items-start min-w-0">
-                    <span className="shrink-0 w-3.5">c.</span>
-                    <span className="flex-1 text-justify">
-                      That the contracting party/ies{' '}
-                      <span
-                        style={{ width: '4.3cm' }}
-                        className="inline-block border-b border-rose-700 text-center align-bottom"
-                      >
-                        {'\u00A0'}
-                      </span>{' '}
-                      and{' '}
-                      <span
-                        style={{ width: '4.3cm' }}
-                        className="inline-block border-b border-rose-700 text-center align-bottom"
-                      >
-                        {'\u00A0'}
-                      </span>
-                      , being at the point of death and physically unable to sign the foregoing certificate of marriage by signature or mark, one of the witnesses to the marriage sign for him or her by writing the dying party&apos;s name and beneath it, the witness&apos; own signature preceded by the preposition &quot;By&quot;;
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-1.5">
-                  <span className="shrink-0 w-3.5" aria-hidden="true" />
-                  <CheckX sizeCm black checked={false} />
-                  <div className="flex-1 flex items-start min-w-0">
-                    <span className="shrink-0 w-3.5">d.</span>
-                    <span className="flex-1 text-justify">
-                      That the residence of either party is so located that there is no means of transportation to enable concerned party to appear personally before the civil registrar;
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-1.5">
-                  <span className="shrink-0 w-3.5" aria-hidden="true" />
-                  <CheckX sizeCm black checked={false} />
-                  <div className="flex-1 flex items-start min-w-0">
-                    <span className="shrink-0 w-3.5">e.</span>
-                    <span className="flex-1 text-justify">
-                      That the marriage was among Muslims or among members of the Ethnic Cultural Communities and that the marriage was solemnized in accordance with their customs and practices;
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-[7.2pt] leading-[1.24] text-justify">
-                3. That I took the necessary steps to ascertain the ages and relationship of the contracting parties and that neither of them are under any legal impediment to marry each other.
-              </p>
-
-              <p
-                style={{ marginBottom: '0.4cm' }}
-                className="text-[7.2pt] leading-[1.24] text-justify"
-              >
-                4. That I am executing this affidavit to attest to the truthfulness of the foregoing statements for all legal intents and purposes.
-              </p>
-
-              <p
-                style={{ textIndent: '1.5cm', marginBottom: '0.4cm' }}
-                className="text-[7.2pt] leading-[1.24] text-justify"
-              >
-                In truth whereof, I have affixed my signature below this{' '}
-                <span
-                  style={{ width: '1cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>{' '}
-                day of{' '}
-                <span
-                  style={{ width: '3.7cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>
-                ,{' '}
-                <span
-                  style={{ width: '1.5cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>{' '}
-                at{' '}
-                <span
-                  style={{ width: '6.7cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>
-                , Philippines.
-              </p>
-
-              {/* Solemnizing Officer Signature Line (COLB-style right aligned 7.8cm, listing font & size, no parentheses) */}
-              <div className="flex justify-end pr-2">
-                <div className="w-[7.8cm] text-center">
-                  <div className="border-b border-rose-700 font-signature text-sm italic uppercase min-h-[12px] pb-0 leading-none text-black">
-                    {pvEmpty(val(com?.solemnizingOfficerName || marriage.officiantName).toUpperCase())}
-                  </div>
-                  <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
-                    Signature Over Printed Name of Solemnizing Officer
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* SUBSCRIBED AND SWORN (Black text, regular weight, 8 consecutive cm blanks, justified full-width rows) */}
-            <div className="pt-0 text-[7.2pt] text-black leading-[1.24] shrink-0 space-y-1 text-justify">
+            return (
               <div
-                style={{ textIndent: '1.5cm' }}
-                className="text-justify [text-align-last:justify] leading-[1.24] w-full mb-1.5"
+                style={{ height: '13.2cm', minHeight: '13.2cm', maxHeight: '13.2cm' }}
+                className="relative z-20 border-b-2 border-rose-700 px-3 py-1 font-helvetica text-[7.2pt] text-black leading-[1.24] flex flex-col justify-between shrink-0 overflow-hidden"
               >
-                SUBSCRIBED AND SWORN to before me this{' '}
-                <span
-                  style={{ width: '1.3cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>{' '}
-                day of{' '}
-                <span
-                  style={{ width: '4.3cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>
-                ,{' '}
-                <span
-                  style={{ width: '1.7cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom indent-0"
-                >
-                  {'\u00A0'}
-                </span>{' '}
-                at
-              </div>
-              <div className="text-justify [text-align-last:justify] leading-[1.24] w-full">
-                <span
-                  style={{ width: '6.4cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom"
-                >
-                  {'\u00A0'}
-                </span>
-                , Philippines, affiant who exhibited to me his/her CTC/valid ID
-              </div>
-              <div className="text-justify [text-align-last:justify] leading-[1.24] w-full">
-                <span
-                  style={{ width: '3.9cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom"
-                >
-                  {'\u00A0'}
-                </span>{' '}
-                issued on{' '}
-                <span
-                  style={{ width: '2.8cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom"
-                >
-                  {'\u00A0'}
-                </span>
-                ,{' '}
-                <span
-                  style={{ width: '1.3cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom"
-                >
-                  {'\u00A0'}
-                </span>{' '}
-                at{' '}
-                <span
-                  style={{ width: '6.2cm' }}
-                  className="inline-block border-b border-rose-700 text-center align-bottom"
-                >
-                  {'\u00A0'}
-                </span>
-                .
-              </div>
-            </div>
+                <div>
+                  <h2 className="text-center font-bold text-[9.5pt] text-black uppercase tracking-wide leading-tight mb-1">
+                    AFFIDAVIT OF SOLEMNIZING OFFICER
+                  </h2>
+                  <div className="mb-1.5 space-y-0.5 text-[7.2pt] leading-[1.24] text-black">
+                    <div style={{ textIndent: '1.5cm' }} className="text-justify [text-align-last:justify]">
+                      I,{' '}
+                      <span
+                        style={{ width: '4.4cm' }}
+                        className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom indent-0"
+                      >
+                        {pv(showSolemnizing ? val(com?.solemnizingOfficerName || marriage.officiantName).toUpperCase() : '')}
+                      </span>
+                      , of legal age, Solemnizing Officer of{' '}
+                      <span
+                        style={{ width: '3.9cm' }}
+                        className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom indent-0"
+                      >
+                        {pv(showSolemnizing ? officerOffice.toUpperCase() : '')}
+                      </span>{' '}
+                      with address at
+                    </div>
+                    <div className="text-justify">
+                      <span
+                        style={{ width: '5.4cm' }}
+                        className="inline-block border-b border-rose-700 uppercase text-center truncate align-bottom"
+                      >
+                        {pv(showSolemnizing ? officerAddr.toUpperCase() : '')}
+                      </span>
+                      , after having been sworn to in accordance with law, do hereby depose and say:
+                    </div>
+                  </div>
 
-            {/* Administering Officer Signature Lines (COLB 2x2 Rose blank lines measuring 7.8cm, listing font & size, no parentheses) */}
-            <div className="grid grid-cols-2 gap-8 text-center shrink-0">
-              {/* Left Column: Signature & Name in Print */}
-              <div className="space-y-0.5 w-[7.8cm] mx-auto">
-                <div>
-                  <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black">
-                    {'\u00A0'}
-                  </div>
-                  <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
-                    Signature of the Administering Officer
+                  <p
+                    style={{ marginBottom: '0.4cm' }}
+                    className="text-justify text-[7.2pt] leading-[1.24] text-black"
+                  >
+                    1. That I have solemnized the marriage between{' '}
+                    <span className="border-b border-rose-700 font-bold uppercase px-1.5">
+                      {showSolemnizing && solemnizingHusband ? (
+                        <span data-print-value="true">{solemnizingHusband.toUpperCase()}</span>
+                      ) : (
+                        '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
+                      )}
+                    </span>{' '}
+                    and{' '}
+                    <span className="border-b border-rose-700 font-bold uppercase px-1.5">
+                      {showSolemnizing && solemnizingWife ? (
+                        <span data-print-value="true">{solemnizingWife.toUpperCase()}</span>
+                      ) : (
+                        '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
+                      )}
+                    </span>
+                    ;
                   </p>
-                </div>
-                <div>
-                  <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black uppercase">
-                    {'\u00A0'}
-                  </div>
-                  <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
-                    Name in Print
-                  </p>
-                </div>
-              </div>
 
-              {/* Right Column: Position / Title / Designation & Address */}
-              <div className="space-y-0.5 w-[7.8cm] mx-auto">
-                <div>
-                  <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black">
-                    {'\u00A0'}
+                  <div className="space-y-0.5 text-[7.2pt] leading-[1.24] text-black">
+                    <div className="flex items-start gap-1.5">
+                      <span className="shrink-0 w-3.5 leading-[0.5cm]">2</span>
+                      <CheckX sizeCm black checked={showSolemnizing && activeQual === '2a'} />
+                      <div className="flex-1 flex items-start min-w-0">
+                        <span className="shrink-0 w-3.5">a.</span>
+                        <span className="flex-1 text-justify">
+                          That I have ascertained the qualifications of the contracting parties and have found no legal impediment for them to marry as required by Article 34 of the Family Code;
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="shrink-0 w-3.5" aria-hidden="true" />
+                      <CheckX sizeCm black checked={showSolemnizing && activeQual === '2b'} />
+                      <div className="flex-1 flex items-start min-w-0">
+                        <span className="shrink-0 w-3.5">b.</span>
+                        <span className="flex-1 text-justify">
+                          That this marriage was performed in articulo mortis or at the point of death;
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="shrink-0 w-3.5" aria-hidden="true" />
+                      <CheckX sizeCm black checked={showSolemnizing && activeQual === '2c'} />
+                      <div className="flex-1 flex items-start min-w-0">
+                        <span className="shrink-0 w-3.5">c.</span>
+                        <span className="flex-1 text-justify">
+                          That the contracting party/ies{' '}
+                          <span
+                            style={{ width: '4.3cm' }}
+                            className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom"
+                          >
+                            {pvEmpty(showSolemnizing && activeQual === '2c' ? (com?.solemnizing2cParty1 || '').toUpperCase() : '')}
+                          </span>{' '}
+                          and{' '}
+                          <span
+                            style={{ width: '4.3cm' }}
+                            className="inline-block border-b border-rose-700 font-bold uppercase text-center truncate align-bottom"
+                          >
+                            {pvEmpty(showSolemnizing && activeQual === '2c' ? (com?.solemnizing2cParty2 || '').toUpperCase() : '')}
+                          </span>
+                          , being at the point of death and physically unable to sign the foregoing certificate of marriage by signature or mark, one of the witnesses to the marriage sign for him or her by writing the dying party&apos;s name and beneath it, the witness&apos; own signature preceded by the preposition &quot;By&quot;;
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="shrink-0 w-3.5" aria-hidden="true" />
+                      <CheckX sizeCm black checked={showSolemnizing && activeQual === '2d'} />
+                      <div className="flex-1 flex items-start min-w-0">
+                        <span className="shrink-0 w-3.5">d.</span>
+                        <span className="flex-1 text-justify">
+                          That the residence of either party is so located that there is no means of transportation to enable concerned party to appear personally before the civil registrar;
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="shrink-0 w-3.5" aria-hidden="true" />
+                      <CheckX sizeCm black checked={showSolemnizing && activeQual === '2e'} />
+                      <div className="flex-1 flex items-start min-w-0">
+                        <span className="shrink-0 w-3.5">e.</span>
+                        <span className="flex-1 text-justify">
+                          That the marriage was among Muslims or among members of the Ethnic Cultural Communities and that the marriage was solemnized in accordance with their customs and practices;
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
-                    Position / Title / Designation
+
+                  <p className="text-[7.2pt] leading-[1.24] text-justify">
+                    3. That I took the necessary steps to ascertain the ages and relationship of the contracting parties and that neither of them are under any legal impediment to marry each other.
                   </p>
+
+                  <p
+                    style={{ marginBottom: '0.4cm' }}
+                    className="text-[7.2pt] leading-[1.24] text-justify"
+                  >
+                    4. That I am executing this affidavit to attest to the truthfulness of the foregoing statements for all legal intents and purposes.
+                  </p>
+
+                  <p
+                    style={{ textIndent: '1.5cm', marginBottom: '0.4cm' }}
+                    className="text-[7.2pt] leading-[1.24] text-justify"
+                  >
+                    In truth whereof, I have affixed my signature below this{' '}
+                    <span
+                      style={{ width: '1cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingSwornDay : '')}
+                    </span>{' '}
+                    day of{' '}
+                    <span
+                      style={{ width: '3.7cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingSwornMonth : '')}
+                    </span>
+                    ,{' '}
+                    <span
+                      style={{ width: '1.5cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingSwornYear : '')}
+                    </span>{' '}
+                    at{' '}
+                    <span
+                      style={{ width: '6.7cm' }}
+                      className="inline-block border-b border-rose-700 uppercase text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? (com?.solemnizingSwornPlace || '').toUpperCase() : '')}
+                    </span>
+                    , Philippines.
+                  </p>
+
+                  {/* Solemnizing Officer Signature Line */}
+                  <div className="flex justify-end pr-2">
+                    <div className="w-[7.8cm] text-center">
+                      <div className="border-b border-rose-700 font-signature text-sm italic uppercase min-h-[12px] pb-0 leading-none text-black">
+                        {pvEmpty(showSolemnizing ? val(com?.solemnizingOfficerName || marriage.officiantName).toUpperCase() : '')}
+                      </div>
+                      <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
+                        Signature Over Printed Name of Solemnizing Officer
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black">
-                    {'\u00A0'}
+
+                {/* SUBSCRIBED AND SWORN */}
+                <div className="pt-0 text-[7.2pt] text-black leading-[1.24] shrink-0 space-y-1 text-justify">
+                  <div
+                    style={{ textIndent: '1.5cm' }}
+                    className="text-justify [text-align-last:justify] leading-[1.24] w-full mb-1.5"
+                  >
+                    SUBSCRIBED AND SWORN to before me this{' '}
+                    <span
+                      style={{ width: '1.3cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingJuratDay : '')}
+                    </span>{' '}
+                    day of{' '}
+                    <span
+                      style={{ width: '4.3cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingJuratMonth : '')}
+                    </span>
+                    ,{' '}
+                    <span
+                      style={{ width: '1.7cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom indent-0 truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingJuratYear : '')}
+                    </span>{' '}
+                    at
                   </div>
-                  <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
-                    Address
-                  </p>
+                  <div className="text-justify [text-align-last:justify] leading-[1.24] w-full">
+                    <span
+                      style={{ width: '6.4cm' }}
+                      className="inline-block border-b border-rose-700 uppercase text-center align-bottom truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? (com?.solemnizingJuratPlace || '').toUpperCase() : '')}
+                    </span>
+                    , Philippines, affiant who exhibited to me his/her CTC/valid ID
+                  </div>
+                  <div className="text-justify [text-align-last:justify] leading-[1.24] w-full">
+                    <span
+                      style={{ width: '3.9cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingAffiantCtc : '')}
+                    </span>{' '}
+                    issued on{' '}
+                    <span
+                      style={{ width: '2.8cm' }}
+                      className="inline-block border-b border-rose-700 text-center align-bottom truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? com?.solemnizingAffiantCtcDate : '')}
+                    </span>{' '}
+                    at{' '}
+                    <span
+                      style={{ width: '6.2cm' }}
+                      className="inline-block border-b border-rose-700 uppercase text-center align-bottom truncate"
+                    >
+                      {pvEmpty(showSolemnizing ? (com?.solemnizingAffiantCtcPlace || '').toUpperCase() : '')}
+                    </span>
+                    .
+                  </div>
+                </div>
+
+                {/* Administering Officer Signature Lines */}
+                <div className="grid grid-cols-2 gap-8 text-center shrink-0">
+                  <div className="space-y-0.5 w-[7.8cm] mx-auto">
+                    <div>
+                      <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black">
+                        {'\u00A0'}
+                      </div>
+                      <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
+                        Signature of the Administering Officer
+                      </p>
+                    </div>
+                    <div>
+                      <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black uppercase truncate">
+                        {pvEmpty(showSolemnizing ? (com?.solemnizingAdminOfficerName || '').toUpperCase() : '')}
+                      </div>
+                      <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
+                        Name in Print
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5 w-[7.8cm] mx-auto">
+                    <div>
+                      <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black truncate">
+                        {pvEmpty(showSolemnizing ? com?.solemnizingAdminOfficerTitle : '')}
+                      </div>
+                      <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
+                        Position / Title / Designation
+                      </p>
+                    </div>
+                    <div>
+                      <div className="border-b border-rose-700 text-[8pt] min-h-[12px] pb-0 font-bold font-helvetica text-black uppercase truncate">
+                        {pvEmpty(showSolemnizing ? (com?.solemnizingAdminOfficerAddress || '').toUpperCase() : '')}
+                      </div>
+                      <p className="text-[7.2pt] font-helvetica font-normal m-0 p-0 leading-tight text-black">
+                        Address
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* 3rd Slice (17 cm): AFFIDAVIT FOR DELAYED REGISTRATION OF MARRIAGE */}
           {(() => {
@@ -1423,13 +1443,13 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
           <div className="grid grid-cols-[2.5cm_8.1cm_8.1cm] border-b border-rose-700 flex-[0.85] min-h-0">
             <div className={labelColClass}>13. Relationship</div>
             <div className={`${husbandColClass} !justify-center`}>
-              <p className="font-bold text-[7.5pt] uppercase text-black truncate leading-none">
-                {pvEmpty(val(com?.husbandConsentRelationship))}
+              <p className="font-bold text-[7.5pt] uppercase text-black text-center truncate leading-none">
+                {pvEmpty(val(com?.husbandConsentRelationship?.trim() || 'N/A'))}
               </p>
             </div>
             <div className={`${wifeColClass} !justify-center`}>
-              <p className="font-bold text-[7.5pt] uppercase text-black truncate leading-none">
-                {pvEmpty(val(com?.wifeConsentRelationship))}
+              <p className="font-bold text-[7.5pt] uppercase text-black text-center truncate leading-none">
+                {pvEmpty(val(com?.wifeConsentRelationship?.trim() || 'N/A'))}
               </p>
             </div>
           </div>
@@ -1442,7 +1462,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 (House No., St., Barangay, City/Municipality, Province, Country)
               </span>
               <p className="font-semibold text-[7pt] uppercase text-black text-center truncate leading-none pb-[2px]">
-                {pvEmpty(val(com?.husbandConsentResidence))}
+                {pvEmpty(val(com?.husbandConsentResidence?.trim() || 'N/A'))}
               </p>
             </div>
             <div className={wifeColClass}>
@@ -1450,7 +1470,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 (House No., St., Barangay, City/Municipality, Province, Country)
               </span>
               <p className="font-semibold text-[7pt] uppercase text-black text-center truncate leading-none pb-[2px]">
-                {pvEmpty(val(com?.wifeConsentResidence))}
+                {pvEmpty(val(com?.wifeConsentResidence?.trim() || 'N/A'))}
               </p>
             </div>
           </div>
@@ -1465,21 +1485,44 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
         >
           {/* 15. Place of Marriage | 16. Date | 17. Time (no bottom border -> removes top border of square 18) */}
           <div className="px-2 py-1 space-y-1 shrink-0">
-            <div className="flex items-start gap-1.5">
-              <span className="font-normal text-black capitalize shrink-0 leading-tight">
-                15. Place of Marriage:
-              </span>
-              <div className="flex-1 flex flex-col">
-                <span className="border-b border-dotted border-rose-800 font-bold uppercase text-black pl-1 truncate leading-tight">
-                  {pv(val(com?.placeOfMarriage || marriage.placeOfMarriage))}
-                </span>
-                <div className="flex justify-between text-[5.8pt] leading-none pt-[1px] px-2">
-                  <span className="mx-2">(Office of the/House of/Barangay of/Church of/Mosque of)</span>
-                  <span className="mx-2">(City/Municipality)</span>
-                  <span className="mx-2">(Province)</span>
+            {(() => {
+              const legacyParts = (com?.placeOfMarriage || '').split(',').map((s) => s.trim()).filter(Boolean);
+              const venuePart =
+                com?.placeOfMarriageVenue ||
+                marriage.placeOfMarriage ||
+                (legacyParts.length >= 2 ? legacyParts.slice(0, -2).join(', ') || legacyParts[0] : legacyParts[0]) ||
+                '';
+              const cityPart =
+                com?.placeOfMarriageCity ||
+                marriage.cityMunicipality ||
+                (legacyParts.length >= 2 ? legacyParts[legacyParts.length - 2] : '') ||
+                '';
+              const provincePart =
+                com?.placeOfMarriageProvince ||
+                marriage.provinceState ||
+                (legacyParts.length >= 3 ? legacyParts[legacyParts.length - 1] : legacyParts.length === 2 ? legacyParts[1] : '') ||
+                '';
+
+              return (
+                <div className="flex items-start gap-1.5">
+                  <span className="font-normal text-black capitalize shrink-0 leading-tight">
+                    15. Place of Marriage:
+                  </span>
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <div className="grid grid-cols-12 gap-2 border-b border-dotted border-rose-800 font-bold uppercase text-black text-center leading-tight min-h-[12px]">
+                      <span className="col-span-6 truncate">{pvEmpty(val(venuePart))}</span>
+                      <span className="col-span-3 truncate">{pvEmpty(val(cityPart))}</span>
+                      <span className="col-span-3 truncate">{pvEmpty(val(provincePart))}</span>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2 text-center text-[5.8pt] leading-none pt-[1px]">
+                      <span className="col-span-6 truncate">(Office of the/House of/Barangay of/Church of/Mosque of)</span>
+                      <span className="col-span-3 truncate">(City/Municipality)</span>
+                      <span className="col-span-3 truncate">(Province)</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             <div className="grid grid-cols-12 gap-3 items-start pt-0.5">
               <div className="col-span-7 flex items-start gap-1.5">
@@ -1594,21 +1637,21 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                       style={{ width: '4cm' }}
                       className="inline-block border-b border-dotted border-rose-700 font-helvetica font-bold text-black px-1 text-center truncate align-bottom"
                     >
-                      {pv(val(com?.marriageLicenseNo))}
+                      {pv((com?.licenseType || 'license') === 'license' ? val(com?.marriageLicenseNo) : '')}
                     </span>{' '}
                     issued on{' '}
                     <span
                       style={{ width: '4cm' }}
                       className="inline-block border-b border-dotted border-rose-700 font-semibold text-black px-1 text-center truncate align-bottom"
                     >
-                      {pv(val(com?.licenseIssuedDate))}
+                      {pv((com?.licenseType || 'license') === 'license' ? val(com?.licenseIssuedDate) : '')}
                     </span>{' '}
                     at{' '}
                     <span
                       style={{ width: '4.5cm' }}
                       className="inline-block border-b border-dotted border-rose-700 font-semibold uppercase text-black px-1 text-center truncate align-bottom"
                     >
-                      {pv(val(com?.licenseIssuedPlace).toUpperCase())}
+                      {pv((com?.licenseType || 'license') === 'license' ? val(com?.licenseIssuedPlace).toUpperCase() : '')}
                     </span>
                     <br />
                     in favor of said parties, was exhibited to me.

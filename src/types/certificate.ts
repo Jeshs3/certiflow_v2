@@ -159,6 +159,8 @@ export interface ColbDetails {
   paternityChildName?: string;
   paternityBirthDate?: string;
   paternityBirthPlace?: string;
+  paternityFatherSignatory?: string;
+  paternityMotherSignatory?: string;
   affidavitPaternityFatherCtc?: string;
   paternityFatherCtcDate?: string;
   paternityFatherCtcPlace?: string;
@@ -300,6 +302,10 @@ export interface ComDetails {
 
   // Marriage Particulars
   placeOfMarriage: string;
+  placeOfMarriageVenue?: string;
+  placeOfMarriageBarangay?: string;
+  placeOfMarriageCity?: string;
+  placeOfMarriageProvince?: string;
   marriageDay?: string;
   marriageMonth?: string;
   marriageYear?: string;
@@ -325,6 +331,10 @@ export interface ComDetails {
   witness2?: string;
   witness3?: string;
   witness4?: string;
+  witness5?: string;
+  witness6?: string;
+  witness7?: string;
+  witness8?: string;
 
   // Registration
   receivedByName?: string;
@@ -336,6 +346,8 @@ export interface ComDetails {
 
   // Page 2 Affidavits
   affidavitSolemnizingOfficerEnabled?: boolean;
+  solemnizingOfficerOffice?: string;
+  solemnizingOfficerAddress?: string;
   solemnizingQualification?: '2a' | '2b' | '2c' | '2d' | '2e';
   solemnizing2cParty1?: string;
   solemnizing2cParty2?: string;

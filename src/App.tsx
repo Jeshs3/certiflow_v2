@@ -77,9 +77,10 @@ export default function App() {
   const [marriageData, setMarriageData] = useState<MarriageCertificateData>(INITIAL_MARRIAGE_DATA);
   const [marriageStyle, setMarriageStyle] = useState<CertificateStyle>(DEFAULT_MARRIAGE_STYLE);
 
-  // Active Draft tracking & session key so opened drafts always start locked and new registries start blank
+  // Active Draft tracking & session key so opened drafts can start in preview-table lock or direct Edit mode
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [isOpenedDraft, setIsOpenedDraft] = useState<boolean>(false);
+  const [draftStartEditable, setDraftStartEditable] = useState<boolean>(false);
   const [formSessionKey, setFormSessionKey] = useState<number>(0);
   const [multipleBirthChildNumber, setMultipleBirthChildNumber] = useState<number>(1);
   const [draftsCount, setDraftsCount] = useState<number>(0);
@@ -249,10 +250,11 @@ export default function App() {
     setFormWidthPct((prev) => (prev <= 43 ? 74 : 42));
   };
 
-  // Load an existing draft (starts locked in table-like view)
-  const handleLoadDraft = (draft: SavedDraft) => {
+  // Load an existing draft (optionally starting directly in unlocked full edit mode)
+  const handleLoadDraft = (draft: SavedDraft, startEditable: boolean = false) => {
     setActiveDraftId(draft.id);
     setIsOpenedDraft(true);
+    setDraftStartEditable(startEditable);
     setActiveBindingField(null);
     setMultipleBirthChildNumber(1);
     setFormSessionKey((prev) => prev + 1);
@@ -266,7 +268,10 @@ export default function App() {
       setCurrentView('marriage');
     }
     setMobileViewMode('form');
-    showToast(`Loaded draft: ${draft.title}`, 'info');
+    showToast(
+      startEditable ? `Editing draft: ${draft.title}` : `Loaded draft: ${draft.title}`,
+      'info'
+    );
   };
 
   // Save current work as draft
@@ -457,6 +462,7 @@ export default function App() {
   const handleStartNewCertificate = (type: CertificateType) => {
     setActiveDraftId(null);
     setIsOpenedDraft(false);
+    setDraftStartEditable(false);
     setActiveBindingField(null);
     setMultipleBirthChildNumber(1);
     setFormSessionKey((prev) => prev + 1);
@@ -742,6 +748,7 @@ export default function App() {
                   activeBindingField={activeBindingField}
                   onActiveBindingFieldChange={setActiveBindingField}
                   isEditingFile={isOpenedDraft}
+                  startUnlocked={draftStartEditable}
                   multipleBirthChildNumber={multipleBirthChildNumber}
                   onSubmitMultipleChild={handleSubmitMultipleChild}
                 />
@@ -872,6 +879,7 @@ export default function App() {
                   }}
                   isDownloadingPDF={isDownloadingMarriagePdf}
                   isEditingFile={isOpenedDraft}
+                  startUnlocked={draftStartEditable}
                 />
               </div>
 

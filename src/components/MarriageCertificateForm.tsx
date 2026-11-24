@@ -3,9 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ComDetails, MarriageCertificateData } from '../types/certificate';
-import { calculateAge, formatName } from '../utils/certificateUtils';
+import {
+  calculateAge,
+  formatName,
+  formatDateMMMMddYYYY,
+  toIsoDateInput,
+  fromMonthDayYearToIso,
+  parseIsoDateToColbParts,
+} from '../utils/certificateUtils';
 import {
   Save,
   Eye,
@@ -16,12 +23,18 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Clock,
   Home,
   Pencil,
   Lock,
 } from 'lucide-react';
 import { IconTooltip } from './IconTooltip';
+import {
+  PhilippineAddressSelector,
+  SingleLinePhilippineAddressInput,
+  mergeStreetWithBarangay,
+} from './PhilippineAddressSelector';
 
 interface MarriageCertificateFormProps {
   data: MarriageCertificateData;
@@ -33,6 +46,7 @@ interface MarriageCertificateFormProps {
   onDownloadPDF?: () => void;
   isDownloadingPDF?: boolean;
   isEditingFile?: boolean;
+  startUnlocked?: boolean;
 }
 
 const getSteps = () => [
@@ -41,9 +55,10 @@ const getSteps = () => [
   { id: 3, title: 'Ceremony, Place & Settlement', range: 'Items 15–18' },
   { id: 4, title: 'Witnesses & Preparation', range: 'Item 20a & Prep' },
   { id: 5, title: 'Form 97 Registry & Signing', range: 'Header, Items 19–22' },
+  { id: 6, title: 'Page 2: Affidavits', range: 'Solemnizing Officer & Delayed Reg.' },
 ] as const;
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const LONG_MONTHS = [
@@ -89,6 +104,20 @@ const legendClass = 'px-2 text-xs font-bold text-purple-800 tracking-tight';
 const labelClass = 'block text-[13px] font-medium text-slate-900 mb-1.5';
 const subLabelClass = 'block text-[11px] text-slate-500 mt-1';
 
+const shortcutBtnClass =
+  'inline-flex items-center gap-1 text-[11px] font-semibold text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-700/30 px-2 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer';
+
+function formatReadableDateFromIso(dateStr?: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const mIdx = parseInt(parts[1], 10) - 1;
+  const monthName = LONG_MONTHS[mIdx];
+  if (!monthName) return dateStr;
+  const dayNum = parseInt(parts[2], 10);
+  return `${monthName} ${isNaN(dayNum) ? parts[2] : dayNum}, ${parts[0]}`;
+}
+
 export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = ({
   data,
   onChange,
@@ -99,12 +128,20 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
   onDownloadPDF,
   isDownloadingPDF = false,
   isEditingFile = false,
+  startUnlocked = false,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [isLocked, setIsLocked] = useState<boolean>(isEditingFile);
+  const [isLocked, setIsLocked] = useState<boolean>(isEditingFile && !startUnlocked);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const formTopRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsLocked(isEditingFile && !startUnlocked);
+    if (!isEditingFile || startUnlocked) {
+      setCurrentStep(1);
+    }
+  }, [isEditingFile, startUnlocked]);
 
   const { groom, bride, marriage, additional, com } = data;
 
@@ -195,6 +232,30 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
         nextAdditional.witness1Name = val;
       } else if (field === 'witness2') {
         nextAdditional.witness2Name = val;
+      } else if (
+        field === 'placeOfMarriageVenue' ||
+        field === 'placeOfMarriageCity' ||
+        field === 'placeOfMarriageProvince'
+      ) {
+        const venue =
+          field === 'placeOfMarriageVenue'
+            ? val
+            : nextCom.placeOfMarriageVenue ?? nextMarriage.placeOfMarriage ?? '';
+        const city =
+          field === 'placeOfMarriageCity'
+            ? val
+            : nextCom.placeOfMarriageCity ?? nextMarriage.cityMunicipality ?? '';
+        const prov =
+          field === 'placeOfMarriageProvince'
+            ? val
+            : nextCom.placeOfMarriageProvince ?? nextMarriage.provinceState ?? '';
+        nextMarriage.placeOfMarriage = venue;
+        nextMarriage.cityMunicipality = city;
+        nextMarriage.provinceState = prov;
+        nextCom.placeOfMarriage = [venue, city, prov]
+          .map((p) => p?.trim())
+          .filter(Boolean)
+          .join(', ');
       }
     }
 
@@ -295,6 +356,9 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       const venue = field === 'placeOfMarriage' ? val : updated.placeOfMarriage;
       const city = field === 'cityMunicipality' ? val : updated.cityMunicipality;
       const prov = field === 'provinceState' ? val : updated.provinceState;
+      nextCom.placeOfMarriageVenue = venue;
+      nextCom.placeOfMarriageCity = city;
+      nextCom.placeOfMarriageProvince = prov;
       nextCom.placeOfMarriage = [venue, city, prov].map((p) => p?.trim()).filter(Boolean).join(', ');
       if (field === 'cityMunicipality') nextCom.cityMunicipality = val;
       if (field === 'provinceState') nextCom.province = val;
@@ -324,6 +388,83 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
   const handleConfirmReset = () => {
     onReset();
     setShowResetConfirm(false);
+  };
+
+  const autofillSolemnizingFromPage1 = () => {
+    const venue = currentCom.placeOfMarriageVenue || marriage.placeOfMarriage || '';
+    const city = currentCom.placeOfMarriageCity || marriage.cityMunicipality || currentCom.cityMunicipality || '';
+    const prov = currentCom.placeOfMarriageProvince || marriage.provinceState || currentCom.province || '';
+    const lcrPlace = [city, prov].filter(Boolean).join(', ');
+    const hName = formatName(groom.firstName, groom.middleName, groom.lastName) || groom.fullName;
+    const wName = formatName(bride.firstName, bride.middleName, bride.lastName) || bride.fullName;
+    onChange({
+      ...data,
+      com: {
+        ...currentCom,
+        affidavitSolemnizingOfficerEnabled: true,
+        solemnizingOfficerOffice: currentCom.solemnizingOfficerOffice || venue || currentCom.solemnizingOfficerReligion || '',
+        solemnizingOfficerAddress: currentCom.solemnizingOfficerAddress || lcrPlace,
+        solemnizingQualification: currentCom.solemnizingQualification || '2a',
+        solemnizing2cParty1: currentCom.solemnizing2cParty1 || hName || '',
+        solemnizing2cParty2: currentCom.solemnizing2cParty2 || wName || '',
+        solemnizingSwornPlace: currentCom.solemnizingSwornPlace || lcrPlace,
+        solemnizingJuratPlace: currentCom.solemnizingJuratPlace || lcrPlace,
+        solemnizingAdminOfficerName:
+          currentCom.solemnizingAdminOfficerName || currentCom.registeredByName || currentCom.receivedByName || '',
+        solemnizingAdminOfficerTitle:
+          currentCom.solemnizingAdminOfficerTitle || currentCom.registeredByTitle || 'Municipal Civil Registrar',
+        solemnizingAdminOfficerAddress: currentCom.solemnizingAdminOfficerAddress || lcrPlace,
+      },
+    });
+  };
+
+  const autofillDelayedFromPage1 = () => {
+    const hName = formatName(groom.firstName, groom.middleName, groom.lastName) || groom.fullName;
+    const wName = formatName(bride.firstName, bride.middleName, bride.lastName) || bride.fullName;
+    const venue = currentCom.placeOfMarriageVenue || marriage.placeOfMarriage || '';
+    const city = currentCom.placeOfMarriageCity || marriage.cityMunicipality || currentCom.cityMunicipality || '';
+    const prov = currentCom.placeOfMarriageProvince || marriage.provinceState || currentCom.province || '';
+    const fullPlace = [venue, city, prov].filter(Boolean).join(', ') || currentCom.placeOfMarriage || '';
+    const lcrPlace = [city, prov].filter(Boolean).join(', ');
+    const cTypeLower = (marriage.ceremonyType || '').toLowerCase();
+    const inferredCeremony: 'religious' | 'civil' | 'muslim' | 'tribal' =
+      cTypeLower.includes('relig') || cTypeLower.includes('church') || cTypeLower.includes('catholic')
+        ? 'religious'
+        : cTypeLower.includes('muslim') || cTypeLower.includes('islam')
+        ? 'muslim'
+        : cTypeLower.includes('tribal') || cTypeLower.includes('ethnic')
+        ? 'tribal'
+        : 'civil';
+
+    onChange({
+      ...data,
+      com: {
+        ...currentCom,
+        affidavitDelayedReg: true,
+        delayedAffiantName: currentCom.delayedAffiantName || hName || wName || '',
+        delayedAffiantCivilStatus: currentCom.delayedAffiantCivilStatus || 'married',
+        delayedAffiantResidence:
+          currentCom.delayedAffiantResidence || currentCom.husbandResidence || groom.currentAddress || '',
+        delayedSpouseName: currentCom.delayedSpouseName || wName || '',
+        delayedMarriagePlace: currentCom.delayedMarriagePlace || fullPlace,
+        delayedMarriageDate: currentCom.delayedMarriageDate || formatReadableDateFromIso(marriage.dateOfMarriage),
+        delayedCeremonyType: currentCom.delayedCeremonyType || inferredCeremony,
+        delayedApplicantCitizenship:
+          currentCom.delayedApplicantCitizenship || currentCom.husbandCitizenship || groom.nationality || 'Filipino',
+        delayedSpouseCitizenship:
+          currentCom.delayedSpouseCitizenship || currentCom.wifeCitizenship || bride.nationality || 'Filipino',
+        delayedHusbandCitizenship:
+          currentCom.delayedHusbandCitizenship || currentCom.husbandCitizenship || groom.nationality || 'Filipino',
+        delayedWifeCitizenship:
+          currentCom.delayedWifeCitizenship || currentCom.wifeCitizenship || bride.nationality || 'Filipino',
+        delayedSwornPlace: currentCom.delayedSwornPlace || lcrPlace,
+        delayedAdminOfficerName:
+          currentCom.delayedAdminOfficerName || currentCom.registeredByName || currentCom.receivedByName || '',
+        delayedAdminOfficerTitle:
+          currentCom.delayedAdminOfficerTitle || currentCom.registeredByTitle || 'Municipal Civil Registrar',
+        delayedAdminOfficerAddress: currentCom.delayedAdminOfficerAddress || lcrPlace,
+      },
+    });
   };
 
   const groomAge = calculateAge(groom.dateOfBirth, marriage.dateOfMarriage);
@@ -388,14 +529,14 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
 
             {isEditingFile && (
               <IconTooltip
-                label={isLocked ? 'Edit Affidavit for Delayed Registration' : 'Lock Registry Table'}
+                label={isLocked ? 'Edit Certificate (Page 1 & Page 2)' : 'Lock Registry Table'}
                 placement="bottom"
                 align="center"
               >
                 <button
                   type="button"
                   onClick={() => setIsLocked((prev) => !prev)}
-                  aria-label={isLocked ? 'Edit Affidavit for Delayed Registration' : 'Lock Registry Table'}
+                  aria-label={isLocked ? 'Edit Certificate (Page 1 & Page 2)' : 'Lock Registry Table'}
                   className={`w-9 h-9 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8] ${
                     isLocked
                       ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -452,39 +593,70 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
           </div>
         </div>
 
-        {/* Quiet Progress Indicator or Locked Record Banner */}
-        {isEditingFile ? (
+        {/* Progress Indicator, Quick-Step Pills, or Locked Record Banner */}
+        {isEditingFile && isLocked ? (
           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
             <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
-              {isLocked ? (
-                <>
-                  <Lock className="w-3.5 h-3.5 text-[#1D4ED8]" />
-                  <span>Locked Registry Table</span>
-                </>
-              ) : (
-                <>
-                  <Pencil className="w-3.5 h-3.5 text-[#1D4ED8]" />
-                  <span>Affidavit for Delayed Registration of Marriage</span>
-                </>
-              )}
+              <Lock className="w-3.5 h-3.5 text-[#1D4ED8]" />
+              <span>Locked Registry Table</span>
             </span>
-            <span className="text-slate-500">
-              {isLocked ? 'Click edit icon to fill delayed affidavit' : 'Only delayed registration affidavit is editable'}
-            </span>
+            <button
+              type="button"
+              onClick={() => setIsLocked(false)}
+              className="inline-flex items-center gap-1 text-[#1D4ED8] hover:underline font-semibold cursor-pointer"
+            >
+              <Pencil className="w-3 h-3" />
+              <span>Edit Page 1 &amp; Page 2</span>
+            </button>
           </div>
         ) : (
-          <div className="space-y-1.5 pt-1 border-t border-slate-100">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-800">{activeStepMeta.title}</span>
-              <span className="text-slate-500 tabular-nums">
-                Step {currentStep} of {TOTAL_STEPS} &middot; {activeStepMeta.range}
-              </span>
+          <div className="space-y-2.5 pt-2 border-t border-slate-100">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="font-semibold text-slate-800 truncate">{activeStepMeta.title}</span>
+                <span className="text-slate-500 tabular-nums shrink-0">
+                  Step {currentStep} of {TOTAL_STEPS} &middot; {activeStepMeta.range}
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-700 transition-all duration-200 rounded-full"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-purple-700 transition-all duration-200 rounded-full"
-                style={{ width: `${progressPercent}%` }}
-              />
+
+            {/* Step Quick-Nav Pills */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+              {steps.map((s) => {
+                const isActive = currentStep === s.id;
+                const shortLabel =
+                  s.id === 1
+                    ? '1. Groom'
+                    : s.id === 2
+                    ? '2. Bride'
+                    : s.id === 3
+                    ? '3. Ceremony'
+                    : s.id === 4
+                    ? '4. Witnesses'
+                    : s.id === 5
+                    ? '5. Registry'
+                    : '6. Page 2';
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => goToStep(s.id)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold border transition-colors truncate cursor-pointer ${
+                      isActive
+                        ? 'bg-purple-700 text-white border-purple-700'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-purple-50 hover:text-purple-800 hover:border-purple-700/40'
+                    }`}
+                  >
+                    {shortLabel}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -552,7 +724,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                         currentCom.husbandConsentResidence,
                       ]
                         .filter(Boolean)
-                        .join(' · '),
+                        .join(' · ') || 'N/A',
                     ],
                   ],
                 },
@@ -596,14 +768,23 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                         currentCom.wifeConsentResidence,
                       ]
                         .filter(Boolean)
-                        .join(' · '),
+                        .join(' · ') || 'N/A',
                     ],
                   ],
                 },
                 {
                   section: 'Ceremony, Place & Settlement (Items 15–18)',
                   rows: [
-                    ['15. Place of Marriage', currentCom.placeOfMarriage || marriage.placeOfMarriage],
+                    [
+                      '15. Place of Marriage',
+                      [
+                        currentCom.placeOfMarriageVenue || marriage.placeOfMarriage,
+                        currentCom.placeOfMarriageCity || marriage.cityMunicipality,
+                        currentCom.placeOfMarriageProvince || marriage.provinceState,
+                      ]
+                        .filter(Boolean)
+                        .join(', ') || currentCom.placeOfMarriage,
+                    ],
                     ['16. Date of Marriage', marriage.dateOfMarriage],
                     ['17. Time of Marriage', marriage.timeOfMarriage],
                     [
@@ -648,12 +829,16 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                         .join(' · '),
                     ],
                     [
-                      '20a. Witnesses',
+                      '20a–b. Witnesses',
                       [
                         currentCom.witness1 || additional.witness1Name,
                         currentCom.witness2 || additional.witness2Name,
                         currentCom.witness3,
                         currentCom.witness4,
+                        currentCom.witness5,
+                        currentCom.witness6,
+                        currentCom.witness7,
+                        currentCom.witness8,
                       ]
                         .filter(Boolean)
                         .join(', '),
@@ -673,21 +858,40 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     ['Remarks / Annotations', currentCom.remarksAnnotation || marriage.remarks],
                   ],
                 },
-                ...(currentCom.affidavitDelayedReg
+                ...(currentCom.affidavitSolemnizingOfficerEnabled !== false || currentCom.affidavitDelayedReg
                   ? [
                       {
-                        section: 'Page 2 Affidavit for Delayed Registration',
+                        section: 'Page 2 Affidavits',
                         rows: [
-                          [
-                            'Delayed Registration',
-                            [
-                              currentCom.delayedAffiantName,
-                              currentCom.delayedReason,
-                              currentCom.delayedAdminOfficerName,
-                            ]
-                              .filter(Boolean)
-                              .join(' · ') || 'Enabled',
-                          ],
+                          ...(currentCom.affidavitSolemnizingOfficerEnabled !== false
+                            ? [
+                                [
+                                  'Solemnizing Officer Affidavit',
+                                  [
+                                    currentCom.solemnizingOfficerName || marriage.officiantName,
+                                    currentCom.solemnizingQualification &&
+                                      `Item ${currentCom.solemnizingQualification}`,
+                                    currentCom.solemnizingAdminOfficerName,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ') || 'Enabled',
+                                ],
+                              ]
+                            : []),
+                          ...(currentCom.affidavitDelayedReg
+                            ? [
+                                [
+                                  'Delayed Registration',
+                                  [
+                                    currentCom.delayedAffiantName,
+                                    currentCom.delayedReason,
+                                    currentCom.delayedAdminOfficerName,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ') || 'Enabled',
+                                ],
+                              ]
+                            : []),
                         ],
                       },
                     ]
@@ -720,274 +924,9 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       )}
 
       {/* =================================================================== */}
-      {/* SAVED DRAFT EDIT MODE: AFFIDAVIT FOR DELAYED REGISTRATION ONLY      */}
-      {/* =================================================================== */}
-      {isEditingFile && !isLocked && (
-        <div className="space-y-3.5">
-          <fieldset className={fieldsetClass}>
-            <legend className={legendClass}>Affidavit for Delayed Registration of Marriage</legend>
-            <label className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-purple-700/40 bg-purple-50/40 cursor-pointer">
-              <span className="text-xs font-medium text-slate-800">
-                Include Page 2 Affidavit for Delayed Registration of Marriage
-              </span>
-              <input
-                type="checkbox"
-                checked={Boolean(currentCom.affidavitDelayedReg)}
-                onChange={(e) => updateCom('affidavitDelayedReg', e.target.checked)}
-                className="w-4 h-4 rounded accent-purple-700 shrink-0"
-              />
-            </label>
-
-            <div className="space-y-3 pt-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Affiant Name</label>
-                  <input
-                    type="text"
-                    placeholder="Full name of affiant"
-                    value={currentCom.delayedAffiantName || ''}
-                    onChange={(e) => updateCom('delayedAffiantName', e.target.value)}
-                    className={`${inputClass} uppercase`}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Affiant Civil Status</label>
-                  <select
-                    value={currentCom.delayedAffiantCivilStatus || 'married'}
-                    onChange={(e) => updateCom('delayedAffiantCivilStatus', e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="single">Single</option>
-                    <option value="married">Married</option>
-                    <option value="divorced">Divorced</option>
-                    <option value="widow">Widow / Widower</option>
-                  </select>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>Affiant Residence &amp; Postal Address</label>
-                  <input
-                    type="text"
-                    placeholder="Barangay, Sagbayan, Bohol"
-                    value={currentCom.delayedAffiantResidence || ''}
-                    onChange={(e) => updateCom('delayedAffiantResidence', e.target.value)}
-                    className={`${inputClass} uppercase`}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Applicant Type</label>
-                  <select
-                    value={currentCom.delayedApplicantType || 'marriage_between'}
-                    onChange={(e) => updateCom('delayedApplicantType', e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="marriage_between">Marriage Between Contracting Parties</option>
-                    <option value="my_marriage">My Own Marriage With Spouse</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Ceremony Type</label>
-                  <select
-                    value={currentCom.delayedCeremonyType || 'civil'}
-                    onChange={(e) => updateCom('delayedCeremonyType', e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="religious">a. Religious ceremony</option>
-                    <option value="civil">b. Civil ceremony</option>
-                    <option value="muslim">c. Muslim rites</option>
-                    <option value="tribal">d. Tribal rites</option>
-                  </select>
-                </div>
-                {currentCom.delayedApplicantType === 'my_marriage' && (
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>Spouse Name</label>
-                    <input
-                      type="text"
-                      placeholder="Full name of spouse"
-                      value={currentCom.delayedSpouseName || ''}
-                      onChange={(e) => updateCom('delayedSpouseName', e.target.value)}
-                      className={`${inputClass} uppercase`}
-                    />
-                  </div>
-                )}
-                <div>
-                  <label className={labelClass}>Applicant Citizenship</label>
-                  <input
-                    type="text"
-                    placeholder="Filipino"
-                    value={currentCom.delayedApplicantCitizenship || ''}
-                    onChange={(e) => updateCom('delayedApplicantCitizenship', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Spouse Citizenship</label>
-                  <input
-                    type="text"
-                    placeholder="Filipino"
-                    value={currentCom.delayedSpouseCitizenship || ''}
-                    onChange={(e) => updateCom('delayedSpouseCitizenship', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Wife Citizenship (if other affiant)</label>
-                  <input
-                    type="text"
-                    placeholder="Filipino"
-                    value={currentCom.delayedWifeCitizenship || ''}
-                    onChange={(e) => updateCom('delayedWifeCitizenship', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Husband Citizenship (if other affiant)</label>
-                  <input
-                    type="text"
-                    placeholder="Filipino"
-                    value={currentCom.delayedHusbandCitizenship || ''}
-                    onChange={(e) => updateCom('delayedHusbandCitizenship', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>Reason for Delayed Registration</label>
-                  <input
-                    type="text"
-                    placeholder="Reason for registering late"
-                    value={currentCom.delayedReason || ''}
-                    onChange={(e) => updateCom('delayedReason', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Sworn Day / Month / Year</label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Day"
-                      value={currentCom.delayedSwornDay || ''}
-                      onChange={(e) => updateCom('delayedSwornDay', e.target.value)}
-                      className={inputClass}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Month"
-                      value={currentCom.delayedSwornMonth || ''}
-                      onChange={(e) => updateCom('delayedSwornMonth', e.target.value)}
-                      className={inputClass}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Year"
-                      value={currentCom.delayedSwornYear || ''}
-                      onChange={(e) => updateCom('delayedSwornYear', e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Sworn Place</label>
-                  <input
-                    type="text"
-                    placeholder="Sagbayan, Bohol"
-                    value={currentCom.delayedSwornPlace || ''}
-                    onChange={(e) => updateCom('delayedSwornPlace', e.target.value)}
-                    className={`${inputClass} uppercase`}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Affiant CTC / Valid ID</label>
-                  <input
-                    type="text"
-                    placeholder="CTC / Valid ID No."
-                    value={currentCom.delayedAffiantCtc || ''}
-                    onChange={(e) => updateCom('delayedAffiantCtc', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <label className={labelClass}>CTC Issued Date</label>
-                    <input
-                      type="text"
-                      placeholder="Date"
-                      value={currentCom.delayedAffiantCtcDate || ''}
-                      onChange={(e) => updateCom('delayedAffiantCtcDate', e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>CTC Issued Place</label>
-                    <input
-                      type="text"
-                      placeholder="Place"
-                      value={currentCom.delayedAffiantCtcPlace || ''}
-                      onChange={(e) => updateCom('delayedAffiantCtcPlace', e.target.value)}
-                      className={`${inputClass} uppercase`}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Administering Officer Name</label>
-                  <input
-                    type="text"
-                    placeholder="ATTY. GREGORIO L. SANTOS"
-                    value={currentCom.delayedAdminOfficerName || ''}
-                    onChange={(e) => updateCom('delayedAdminOfficerName', e.target.value)}
-                    className={`${inputClass} uppercase`}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Officer Title / Designation</label>
-                  <input
-                    type="text"
-                    placeholder="Municipal Civil Registrar"
-                    value={currentCom.delayedAdminOfficerTitle || ''}
-                    onChange={(e) => updateCom('delayedAdminOfficerTitle', e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>Administering Officer Address</label>
-                  <input
-                    type="text"
-                    placeholder="Municipal Hall, Sagbayan, Bohol"
-                    value={currentCom.delayedAdminOfficerAddress || ''}
-                    onChange={(e) => updateCom('delayedAdminOfficerAddress', e.target.value)}
-                    className={`${inputClass} uppercase`}
-                  />
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setIsLocked(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Done &amp; Lock</span>
-            </button>
-            {onSaveDraft && (
-              <button
-                type="button"
-                onClick={handleSaveClick}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Save Draft</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* =================================================================== */}
       {/* STEP 1: GROOM'S / HUSBAND'S INFORMATION (ITEMS 1–14)                */}
       {/* =================================================================== */}
-      {!isEditingFile && currentStep === 1 && (
+      {!(isEditingFile && isLocked) && currentStep === 1 && (
         <div className="space-y-3.5">
           <fieldset className={fieldsetClass}>
             <legend className={legendClass}>
@@ -1025,24 +964,6 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 <span className={subLabelClass}>Last Name *</span>
               </div>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[13px] font-medium text-slate-900">
-                  Full Groom Name (Formatted)
-                </label>
-                <span className="text-[11px] text-slate-500 italic">
-                  Auto-formatted or enter custom
-                </span>
-              </div>
-              <input
-                type="text"
-                value={groom.fullName ?? ''}
-                onChange={(e) => updateGroom('fullName', e.target.value)}
-                placeholder="JUAN CARLOS MENDOZA DELA CRUZ"
-                className={`${inputClass} uppercase font-semibold`}
-              />
-            </div>
           </fieldset>
 
           <fieldset className={fieldsetClass}>
@@ -1079,17 +1000,18 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-3">
               <div>
                 <label className={labelClass}>3. Place of Birth</label>
-                <input
-                  type="text"
+                <SingleLinePhilippineAddressInput
+                  variant="com"
+                  showBarangay={false}
+                  showStreet={false}
+                  showCountry={true}
+                  includeCountry={true}
                   value={groom.placeOfBirth ?? ''}
-                  onChange={(e) => updateGroom('placeOfBirth', e.target.value)}
-                  placeholder="City/Municipality, Province, Country"
-                  className={`${inputClass} uppercase`}
+                  onChange={(nextVal) => updateGroom('placeOfBirth', nextVal)}
                 />
-                <span className={subLabelClass}>Separate City, Province, Country with commas</span>
               </div>
 
               <div>
@@ -1106,12 +1028,13 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
 
             <div>
               <label className={labelClass}>5. Residence</label>
-              <input
-                type="text"
+              <SingleLinePhilippineAddressInput
+                variant="com"
+                showBarangay={true}
+                showStreet={true}
+                includeCountry={true}
                 value={currentCom.husbandResidence ?? groom.currentAddress ?? ''}
-                onChange={(e) => updateCom('husbandResidence', e.target.value)}
-                placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={`${inputClass} uppercase`}
+                onChange={(nextVal) => updateCom('husbandResidence', nextVal)}
               />
             </div>
 
@@ -1246,9 +1169,28 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
             <legend className={legendClass}>
               Items 12–14: Person / Wali Who Gave Consent or Advice (If Applicable)
             </legend>
-            <p className="text-xs text-slate-500">
-              Fill this section if the groom is 18–25 years old or requires parental consent/advice.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-slate-500">
+                Fill if groom is 18–25 yrs old or requires consent/advice; otherwise N/A applies.
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...data,
+                    com: {
+                      ...currentCom,
+                      husbandConsentPerson: 'N/A',
+                      husbandConsentRelationship: 'N/A',
+                      husbandConsentResidence: 'N/A',
+                    },
+                  })
+                }
+                className={shortcutBtnClass}
+              >
+                <span>Not Applicable (N/A)</span>
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>12. Name of Person / Wali</label>
@@ -1274,13 +1216,28 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
             </div>
 
             <div>
-              <label className={labelClass}>14. Residence of Person / Wali</label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-[13px] font-medium text-slate-900">
+                  14. Residence of Person / Wali
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateCom('husbandConsentResidence', currentCom.husbandResidence || groom.currentAddress || '')
+                  }
+                  className={shortcutBtnClass}
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Same as Groom&apos;s Residence</span>
+                </button>
+              </div>
+              <SingleLinePhilippineAddressInput
+                variant="com"
+                showBarangay={true}
+                showStreet={true}
+                includeCountry={true}
                 value={currentCom.husbandConsentResidence ?? ''}
-                onChange={(e) => updateCom('husbandConsentResidence', e.target.value)}
-                placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={`${inputClass} uppercase`}
+                onChange={(nextVal) => updateCom('husbandConsentResidence', nextVal)}
               />
             </div>
           </fieldset>
@@ -1290,7 +1247,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       {/* =================================================================== */}
       {/* STEP 2: BRIDE'S / WIFE'S INFORMATION (ITEMS 1–14)                   */}
       {/* =================================================================== */}
-      {!isEditingFile && currentStep === 2 && (
+      {!(isEditingFile && isLocked) && currentStep === 2 && (
         <div className="space-y-3.5">
           <fieldset className={fieldsetClass}>
             <legend className={legendClass}>
@@ -1328,24 +1285,6 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 <span className={subLabelClass}>Last Name *</span>
               </div>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[13px] font-medium text-slate-900">
-                  Full Bride Name (Formatted)
-                </label>
-                <span className="text-[11px] text-slate-500 italic">
-                  Auto-formatted or enter custom
-                </span>
-              </div>
-              <input
-                type="text"
-                value={bride.fullName ?? ''}
-                onChange={(e) => updateBride('fullName', e.target.value)}
-                placeholder="MARIA CLARA BAUTISTA SANTOS"
-                className={`${inputClass} uppercase font-semibold`}
-              />
-            </div>
           </fieldset>
 
           <fieldset className={fieldsetClass}>
@@ -1382,21 +1321,46 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-3">
               <div>
-                <label className={labelClass}>3. Place of Birth</label>
-                <input
-                  type="text"
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">3. Place of Birth</label>
+                  <button
+                    type="button"
+                    onClick={() => updateBride('placeOfBirth', groom.placeOfBirth || '')}
+                    className={shortcutBtnClass}
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Same as Groom</span>
+                  </button>
+                </div>
+                <SingleLinePhilippineAddressInput
+                  variant="com"
+                  showBarangay={false}
+                  showStreet={false}
+                  showCountry={true}
+                  includeCountry={true}
                   value={bride.placeOfBirth ?? ''}
-                  onChange={(e) => updateBride('placeOfBirth', e.target.value)}
-                  placeholder="City/Municipality, Province, Country"
-                  className={`${inputClass} uppercase`}
+                  onChange={(nextVal) => updateBride('placeOfBirth', nextVal)}
                 />
-                <span className={subLabelClass}>Separate City, Province, Country with commas</span>
               </div>
 
               <div>
-                <label className={labelClass}>4b. Citizenship (4a. Sex: FEMALE)</label>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    4b. Citizenship (4a. Sex: FEMALE)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateCom('wifeCitizenship', currentCom.husbandCitizenship || groom.nationality || 'Filipino')
+                    }
+                    className={shortcutBtnClass}
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Groom</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={currentCom.wifeCitizenship ?? bride.nationality ?? ''}
@@ -1408,13 +1372,26 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
             </div>
 
             <div>
-              <label className={labelClass}>5. Residence</label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-[13px] font-medium text-slate-900">5. Residence</label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateCom('wifeResidence', currentCom.husbandResidence || groom.currentAddress || '')
+                  }
+                  className={shortcutBtnClass}
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Same as Groom&apos;s Residence</span>
+                </button>
+              </div>
+              <SingleLinePhilippineAddressInput
+                variant="com"
+                showBarangay={true}
+                showStreet={true}
+                includeCountry={true}
                 value={currentCom.wifeResidence ?? bride.currentAddress ?? ''}
-                onChange={(e) => updateCom('wifeResidence', e.target.value)}
-                placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={`${inputClass} uppercase`}
+                onChange={(nextVal) => updateCom('wifeResidence', nextVal)}
               />
             </div>
 
@@ -1549,9 +1526,28 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
             <legend className={legendClass}>
               Items 12–14: Person / Wali Who Gave Consent or Advice (If Applicable)
             </legend>
-            <p className="text-xs text-slate-500">
-              Fill this section if the bride is 18–25 years old or requires parental consent/advice.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-slate-500">
+                Fill if bride is 18–25 yrs old or requires consent/advice; otherwise N/A applies.
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...data,
+                    com: {
+                      ...currentCom,
+                      wifeConsentPerson: 'N/A',
+                      wifeConsentRelationship: 'N/A',
+                      wifeConsentResidence: 'N/A',
+                    },
+                  })
+                }
+                className={shortcutBtnClass}
+              >
+                <span>Not Applicable (N/A)</span>
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>12. Name of Person / Wali</label>
@@ -1577,13 +1573,28 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
             </div>
 
             <div>
-              <label className={labelClass}>14. Residence of Person / Wali</label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-[13px] font-medium text-slate-900">
+                  14. Residence of Person / Wali
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateCom('wifeConsentResidence', currentCom.wifeResidence || bride.currentAddress || '')
+                  }
+                  className={shortcutBtnClass}
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Same as Bride&apos;s Residence</span>
+                </button>
+              </div>
+              <SingleLinePhilippineAddressInput
+                variant="com"
+                showBarangay={true}
+                showStreet={true}
+                includeCountry={true}
                 value={currentCom.wifeConsentResidence ?? ''}
-                onChange={(e) => updateCom('wifeConsentResidence', e.target.value)}
-                placeholder="House No., St., Barangay, City/Municipality, Province, Country"
-                className={`${inputClass} uppercase`}
+                onChange={(nextVal) => updateCom('wifeConsentResidence', nextVal)}
               />
             </div>
           </fieldset>
@@ -1593,7 +1604,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       {/* =================================================================== */}
       {/* STEP 3: CEREMONY, PLACE OF MARRIAGE & SETTLEMENT (ITEMS 15–18)      */}
       {/* =================================================================== */}
-      {!isEditingFile && currentStep === 3 && (
+      {!(isEditingFile && isLocked) && currentStep === 3 && (
         <div className="space-y-3.5">
           <fieldset className={fieldsetClass}>
             <legend className={legendClass}>Items 16 &amp; 17: Date &amp; Time of Marriage</legend>
@@ -1627,73 +1638,112 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
           </fieldset>
 
           <fieldset className={fieldsetClass}>
-            <legend className={legendClass}>Item 15: Venue &amp; Place of Marriage</legend>
+            <legend className={legendClass}>Item 15: Place of Marriage</legend>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const city = currentCom.cityMunicipality || marriage.cityMunicipality || '';
+                  const prov = currentCom.province || marriage.provinceState || '';
+                  const venue = currentCom.placeOfMarriageVenue ?? marriage.placeOfMarriage ?? '';
+                  onChange({
+                    ...data,
+                    marriage: {
+                      ...marriage,
+                      cityMunicipality: city,
+                      provinceState: prov,
+                    },
+                    com: {
+                      ...currentCom,
+                      placeOfMarriageVenue: venue,
+                      placeOfMarriageCity: city,
+                      placeOfMarriageProvince: prov,
+                      placeOfMarriage: [venue, city, prov].filter(Boolean).join(', '),
+                    },
+                  });
+                }}
+                className={shortcutBtnClass}
+              >
+                <Copy className="w-3 h-3" />
+                <span>Copy Header Location</span>
+              </button>
+            </div>
+
             <div>
               <label className={labelClass}>
-                Venue / Office / Church / Barangay <span className="text-rose-600">*</span>
+                15a. Office of the / House of / Barangay of / Church of / Mosque of{' '}
+                <span className="text-rose-600">*</span>
               </label>
               <input
                 type="text"
-                value={marriage.placeOfMarriage ?? ''}
-                onChange={(e) => updateMarriage('placeOfMarriage', e.target.value)}
-                placeholder="e.g. Sagbayan Parish Church"
+                value={currentCom.placeOfMarriageVenue ?? marriage.placeOfMarriage ?? ''}
+                onChange={(e) => updateCom('placeOfMarriageVenue', e.target.value)}
+                placeholder="e.g. St. Augustine Parish Church"
                 className={`${inputClass} uppercase`}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className={labelClass}>
-                  City / Municipality <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={marriage.cityMunicipality ?? ''}
-                  onChange={(e) => updateMarriage('cityMunicipality', e.target.value)}
-                  placeholder="e.g. Sagbayan"
-                  className={`${inputClass} uppercase`}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Province / State</label>
-                <input
-                  type="text"
-                  value={marriage.provinceState ?? ''}
-                  onChange={(e) => updateMarriage('provinceState', e.target.value)}
-                  placeholder="e.g. Bohol"
-                  className={`${inputClass} uppercase`}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Country <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={marriage.country ?? ''}
-                  onChange={(e) => updateMarriage('country', e.target.value)}
-                  placeholder="e.g. Philippines"
-                  className={`${inputClass} uppercase`}
-                />
-              </div>
-            </div>
+            <PhilippineAddressSelector
+              variant="com"
+              provinceRequired
+              cityRequired
+              showBarangay={true}
+              showStreet={false}
+              showCountry={true}
+              province={currentCom.placeOfMarriageProvince ?? marriage.provinceState ?? ''}
+              cityMunicipality={currentCom.placeOfMarriageCity ?? marriage.cityMunicipality ?? ''}
+              barangay={currentCom.placeOfMarriageBarangay ?? ''}
+              street={currentCom.placeOfMarriageVenue ?? marriage.placeOfMarriage ?? ''}
+              country={marriage.country ?? ''}
+              onChange={(nextAddr) => {
+                const currentVenue =
+                  currentCom.placeOfMarriageVenue ?? marriage.placeOfMarriage ?? '';
+                const prevBarangays = currentCom.placeOfMarriageBarangay
+                  ? [currentCom.placeOfMarriageBarangay]
+                  : undefined;
+                const nextVenue =
+                  nextAddr.barangay !== (currentCom.placeOfMarriageBarangay ?? '')
+                    ? mergeStreetWithBarangay(currentVenue, nextAddr.barangay, prevBarangays)
+                    : currentVenue;
+                const city = nextAddr.cityMunicipality;
+                const prov = nextAddr.province;
+                onChange({
+                  ...data,
+                  marriage: {
+                    ...marriage,
+                    placeOfMarriage: nextVenue,
+                    cityMunicipality: city,
+                    provinceState: prov,
+                    country: nextAddr.country,
+                  },
+                  com: {
+                    ...currentCom,
+                    placeOfMarriageVenue: nextVenue,
+                    placeOfMarriageBarangay: nextAddr.barangay,
+                    placeOfMarriageCity: city,
+                    placeOfMarriageProvince: prov,
+                    cityMunicipality: city || currentCom.cityMunicipality,
+                    province: prov || currentCom.province,
+                    placeOfMarriage: [nextVenue, city, prov]
+                      .map((p) => p?.trim())
+                      .filter(Boolean)
+                      .join(', '),
+                  },
+                });
+              }}
+            />
 
             <div>
               <label className={labelClass}>
-                15. Full Form 97 Place of Marriage Line
+                15. Complete Place of Marriage
               </label>
               <input
                 type="text"
                 value={currentCom.placeOfMarriage ?? ''}
                 onChange={(e) => updateCom('placeOfMarriage', e.target.value)}
-                placeholder="e.g. Sagbayan Parish Church, Sagbayan, Bohol"
+                placeholder="e.g. St. Augustine Parish Church, Sagbayan, Bohol"
                 className={`${inputClass} uppercase`}
               />
-              <span className={subLabelClass}>
-                Auto-composed from Venue, City &amp; Province above, or customize directly
-              </span>
             </div>
           </fieldset>
 
@@ -1783,10 +1833,10 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       {/* =================================================================== */}
       {/* STEP 4: WITNESSES & PREPARATION (ITEM 20a)                          */}
       {/* =================================================================== */}
-      {!isEditingFile && currentStep === 4 && (
+      {!(isEditingFile && isLocked) && currentStep === 4 && (
         <div className="space-y-3.5">
           <fieldset className={fieldsetClass}>
-            <legend className={legendClass}>Item 20a: Attesting Witnesses</legend>
+            <legend className={legendClass}>Item 20a &amp; 20b: Attesting Witnesses</legend>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Witness 1 Name</label>
@@ -1794,7 +1844,6 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   type="text"
                   value={currentCom.witness1 ?? additional.witness1Name ?? ''}
                   onChange={(e) => updateAdditional('witness1Name', e.target.value)}
-                  placeholder="e.g. ROBERTO MENDEZ DELA CRUZ"
                   className={`${inputClass} uppercase`}
                 />
               </div>
@@ -1805,7 +1854,6 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   type="text"
                   value={currentCom.witness2 ?? additional.witness2Name ?? ''}
                   onChange={(e) => updateAdditional('witness2Name', e.target.value)}
-                  placeholder="e.g. ELENA BAUTISTA SANTOS"
                   className={`${inputClass} uppercase`}
                 />
               </div>
@@ -1813,23 +1861,131 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className={labelClass}>Witness 3 Name (optional)</label>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    Witness 3 Name (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('witness3', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={currentCom.witness3 ?? ''}
                   onChange={(e) => updateCom('witness3', e.target.value)}
-                  placeholder="e.g. MARCUS AURELIUS VANCE"
                   className={`${inputClass} uppercase`}
                 />
               </div>
 
               <div>
-                <label className={labelClass}>Witness 4 Name (optional)</label>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    Witness 4 Name (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('witness4', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={currentCom.witness4 ?? ''}
                   onChange={(e) => updateCom('witness4', e.target.value)}
-                  placeholder="e.g. CHARLOTTE GRACE STERLING"
+                  className={`${inputClass} uppercase`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    Witness 5 Name (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('witness5', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={currentCom.witness5 ?? ''}
+                  onChange={(e) => updateCom('witness5', e.target.value)}
+                  className={`${inputClass} uppercase`}
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    Witness 6 Name (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('witness6', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={currentCom.witness6 ?? ''}
+                  onChange={(e) => updateCom('witness6', e.target.value)}
+                  className={`${inputClass} uppercase`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    Witness 7 Name (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('witness7', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={currentCom.witness7 ?? ''}
+                  onChange={(e) => updateCom('witness7', e.target.value)}
+                  className={`${inputClass} uppercase`}
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    Witness 8 Name (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('witness8', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={currentCom.witness8 ?? ''}
+                  onChange={(e) => updateCom('witness8', e.target.value)}
                   className={`${inputClass} uppercase`}
                 />
               </div>
@@ -1865,39 +2021,59 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       )}
 
       {/* =================================================================== */}
-      {/* STEP 5: FORM 97 REGISTRY, LICENSE, LCRO & AFFIDAVITS                */}
+      {/* STEP 5: FORM 97 REGISTRY, LICENSE & LCRO (HEADER, ITEMS 19–22)      */}
       {/* =================================================================== */}
-      {!isEditingFile && currentStep === 5 && (
+      {!(isEditingFile && isLocked) && currentStep === 5 && (
         <div className="space-y-3.5">
           <fieldset className={fieldsetClass}>
             <legend className={legendClass}>Header: Registry Location &amp; Number</legend>
-            <p className="text-xs text-slate-500">
-              Official Civil Registry Form 97 (Revised August 2016) &mdash; Province, Municipality, and LCR Registry Number
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className={labelClass}>Province</label>
-                <input
-                  type="text"
-                  value={currentCom.province ?? ''}
-                  onChange={(e) => updateCom('province', e.target.value)}
-                  placeholder="e.g. BOHOL"
-                  className={`${inputClass} uppercase font-semibold`}
-                />
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-slate-500">
+                Province, Municipality, and LCR Registry Number
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...data,
+                    com: {
+                      ...currentCom,
+                      province: currentCom.placeOfMarriageProvince || marriage.provinceState || '',
+                      cityMunicipality: currentCom.placeOfMarriageCity || marriage.cityMunicipality || '',
+                    },
+                  })
+                }
+                className={shortcutBtnClass}
+              >
+                <Copy className="w-3 h-3" />
+                <span>Copy Item 15 Location</span>
+              </button>
+            </div>
+            <div className="space-y-3">
+              <PhilippineAddressSelector
+                variant="com"
+                showBarangay={false}
+                showStreet={false}
+                province={currentCom.province ?? ''}
+                cityMunicipality={currentCom.cityMunicipality ?? ''}
+                onChange={(nextAddr) => {
+                  onChange({
+                    ...data,
+                    marriage: {
+                      ...marriage,
+                      provinceState: nextAddr.province || marriage.provinceState,
+                      cityMunicipality: nextAddr.cityMunicipality || marriage.cityMunicipality,
+                    },
+                    com: {
+                      ...currentCom,
+                      province: nextAddr.province,
+                      cityMunicipality: nextAddr.cityMunicipality,
+                    },
+                  });
+                }}
+              />
 
-              <div>
-                <label className={labelClass}>City / Municipality</label>
-                <input
-                  type="text"
-                  value={currentCom.cityMunicipality ?? ''}
-                  onChange={(e) => updateCom('cityMunicipality', e.target.value)}
-                  placeholder="e.g. SAGBAYAN"
-                  className={`${inputClass} uppercase font-semibold`}
-                />
-              </div>
-
-              <div>
+              <div className="sm:max-w-xs">
                 <label className={labelClass}>Registry Number</label>
                 <input
                   type="text"
@@ -1946,36 +2122,39 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
             </div>
 
             {(!currentCom.licenseType || currentCom.licenseType === 'license') && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Marriage License No.</label>
-                  <input
-                    type="text"
-                    value={currentCom.marriageLicenseNo ?? ''}
-                    onChange={(e) => updateCom('marriageLicenseNo', e.target.value)}
-                    placeholder="e.g. ML-2023-8941"
-                    className={`${inputClass} font-mono tabular-nums`}
-                  />
-                </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Marriage License No.</label>
+                    <input
+                      type="text"
+                      value={currentCom.marriageLicenseNo ?? ''}
+                      onChange={(e) => updateCom('marriageLicenseNo', e.target.value)}
+                      placeholder="e.g. ML-2023-8941"
+                      className={`${inputClass} font-mono tabular-nums`}
+                    />
+                  </div>
 
-                <div>
-                  <label className={labelClass}>License Issued Date</label>
-                  <input
-                    type="date"
-                    value={currentCom.licenseIssuedDate ?? ''}
-                    onChange={(e) => updateCom('licenseIssuedDate', e.target.value)}
-                    className={inputClass}
-                  />
+                  <div>
+                    <label className={labelClass}>License Issued Date</label>
+                    <input
+                      type="date"
+                      value={currentCom.licenseIssuedDate ?? ''}
+                      onChange={(e) => updateCom('licenseIssuedDate', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className={labelClass}>Place Issued</label>
-                  <input
-                    type="text"
+                  <SingleLinePhilippineAddressInput
+                    variant="com"
+                    showBarangay={false}
+                    showStreet={false}
+                    includeCountry={false}
                     value={currentCom.licenseIssuedPlace ?? ''}
-                    onChange={(e) => updateCom('licenseIssuedPlace', e.target.value)}
-                    placeholder="e.g. Sagbayan, Bohol"
-                    className={`${inputClass} uppercase`}
+                    onChange={(nextVal) => updateCom('licenseIssuedPlace', nextVal)}
                   />
                 </div>
               </div>
@@ -2029,12 +2208,23 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
               </div>
 
               <div>
-                <label className={labelClass}>CRASM Registry No. &amp; Expiration (optional)</label>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[13px] font-medium text-slate-900">
+                    CRASM Registry No. &amp; Expiration (if applicable)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateCom('solemnizingOfficerRegistryNo', 'N/A')}
+                    className={shortcutBtnClass}
+                  >
+                    <span>Set N/A</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={currentCom.solemnizingOfficerRegistryNo ?? ''}
                   onChange={(e) => updateCom('solemnizingOfficerRegistryNo', e.target.value)}
-                  placeholder="e.g. Reg. No. 2023-112 / Exp. Dec 31, 2025"
+                  placeholder="e.g. Reg. No. 2023-112 / Exp. Dec 31, 2025 or N/A"
                   className={inputClass}
                 />
               </div>
@@ -2080,9 +2270,29 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
               </div>
 
               <div className="p-3 bg-slate-50 rounded-lg border border-purple-700/30 space-y-2.5">
-                <span className="text-[11px] font-bold text-purple-800 uppercase block">
-                  22. Registered By (Civil Registrar)
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-purple-800 uppercase block">
+                    22. Registered By (Civil Registrar)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onChange({
+                        ...data,
+                        com: {
+                          ...currentCom,
+                          registeredByName: currentCom.receivedByName || '',
+                          registeredByTitle: currentCom.receivedByTitle || '',
+                          registeredByDate: currentCom.receivedByDate || '',
+                        },
+                      })
+                    }
+                    className={shortcutBtnClass}
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Same as 21</span>
+                  </button>
+                </div>
                 <div>
                   <label className={labelClass}>Name in Print</label>
                   <input
@@ -2133,15 +2343,570 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       )}
 
       {/* =================================================================== */}
+      {/* STEP 6: PAGE 2 AFFIDAVITS (SOLEMNIZING OFFICER & DELAYED REG.)      */}
+      {/* =================================================================== */}
+      {!(isEditingFile && isLocked) && currentStep === 6 && (
+        <div className="space-y-3.5">
+          {/* Affidavit of Solemnizing Officer */}
+          <fieldset className={fieldsetClass}>
+            <legend className={legendClass}>Page 2: Affidavit of Solemnizing Officer</legend>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-purple-700/40 bg-purple-50/40">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={currentCom.affidavitSolemnizingOfficerEnabled !== false}
+                  onChange={(e) => updateCom('affidavitSolemnizingOfficerEnabled', e.target.checked)}
+                  className="w-4 h-4 rounded accent-purple-700 shrink-0"
+                />
+                <span className="text-xs font-medium text-slate-800">
+                  Include Affidavit of Solemnizing Officer on Page 2
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={autofillSolemnizingFromPage1}
+                className={shortcutBtnClass}
+              >
+                <Copy className="w-3 h-3" />
+                <span>Auto-fill from Page 1</span>
+              </button>
+            </div>
+
+            {currentCom.affidavitSolemnizingOfficerEnabled !== false && (
+              <div className="space-y-3 pt-1">
+                <div className="space-y-3">
+                  <div>
+                    <label className={labelClass}>Solemnizing Officer of (Church / Office / Agency)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. St. Augustine Parish Church"
+                      value={currentCom.solemnizingOfficerOffice ?? ''}
+                      onChange={(e) => updateCom('solemnizingOfficerOffice', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Officer&apos;s Office / Residence Address</label>
+                    <SingleLinePhilippineAddressInput
+                      variant="com"
+                      showBarangay={true}
+                      showStreet={true}
+                      includeCountry={false}
+                      value={currentCom.solemnizingOfficerAddress ?? ''}
+                      onChange={(nextVal) => updateCom('solemnizingOfficerAddress', nextVal)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Item 2: Qualification / Legal Ground Checked</label>
+                  <div className="space-y-1.5">
+                    {[
+                      {
+                        value: '2a',
+                        label: '2a. Ascertained qualifications & no legal impediment (Art. 34 Family Code)',
+                      },
+                      {
+                        value: '2b',
+                        label: '2b. Marriage performed in articulo mortis (at point of death)',
+                      },
+                      {
+                        value: '2c',
+                        label: '2c. Witness signed for dying party physically unable to sign',
+                      },
+                      {
+                        value: '2d',
+                        label: '2d. Remote residence with no transportation to appear before LCRO',
+                      },
+                      {
+                        value: '2e',
+                        label: '2e. Marriage among Muslims or Ethnic Cultural Communities',
+                      },
+                    ].map((opt) => {
+                      const active = currentCom.solemnizingQualification === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-colors ${
+                            active
+                              ? 'border-purple-700 bg-purple-50 text-purple-950 font-semibold'
+                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="com-solemnizing-qual"
+                            checked={active}
+                            onChange={() => updateCom('solemnizingQualification', opt.value)}
+                            className="w-3.5 h-3.5 accent-purple-700 shrink-0"
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {currentCom.solemnizingQualification === '2c' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg bg-purple-50/40 border border-purple-700/30">
+                    <div>
+                      <label className={labelClass}>2c. Contracting Party 1 Name</label>
+                      <input
+                        type="text"
+                        placeholder="Full name of party 1"
+                        value={currentCom.solemnizing2cParty1 ?? ''}
+                        onChange={(e) => updateCom('solemnizing2cParty1', e.target.value)}
+                        className={`${inputClass} uppercase`}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <label className="block text-[13px] font-medium text-slate-900">
+                          2c. Contracting Party 2 Name (optional)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => updateCom('solemnizing2cParty2', 'N/A')}
+                          className={shortcutBtnClass}
+                        >
+                          <span>Set N/A</span>
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Full name of party 2 or N/A"
+                        value={currentCom.solemnizing2cParty2 ?? ''}
+                        onChange={(e) => updateCom('solemnizing2cParty2', e.target.value)}
+                        className={`${inputClass} uppercase`}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>In Truth Whereof / Witness Date</label>
+                    <input
+                      type="date"
+                      value={fromMonthDayYearToIso(
+                        currentCom.solemnizingSwornMonth,
+                        currentCom.solemnizingSwornDay,
+                        currentCom.solemnizingSwornYear
+                      )}
+                      onChange={(e) => {
+                        const parts = parseIsoDateToColbParts(e.target.value);
+                        onChange({
+                          ...data,
+                          com: {
+                            ...currentCom,
+                            solemnizingSwornDay: parts ? parts.dayOrdinal : '',
+                            solemnizingSwornMonth: parts ? parts.monthName : '',
+                            solemnizingSwornYear: parts ? parts.year : '',
+                          },
+                        });
+                      }}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>In Truth Whereof / Witness Place</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sagbayan, Bohol"
+                      value={currentCom.solemnizingSwornPlace ?? ''}
+                      onChange={(e) => updateCom('solemnizingSwornPlace', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+                  <div>
+                    <label className={labelClass}>Subscribed &amp; Sworn Jurat Date</label>
+                    <input
+                      type="date"
+                      value={fromMonthDayYearToIso(
+                        currentCom.solemnizingJuratMonth,
+                        currentCom.solemnizingJuratDay,
+                        currentCom.solemnizingJuratYear
+                      )}
+                      onChange={(e) => {
+                        const parts = parseIsoDateToColbParts(e.target.value);
+                        onChange({
+                          ...data,
+                          com: {
+                            ...currentCom,
+                            solemnizingJuratDay: parts ? parts.dayOrdinal : '',
+                            solemnizingJuratMonth: parts ? parts.monthName : '',
+                            solemnizingJuratYear: parts ? parts.year : '',
+                          },
+                        });
+                      }}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Subscribed &amp; Sworn Jurat Place</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sagbayan, Bohol"
+                      value={currentCom.solemnizingJuratPlace ?? ''}
+                      onChange={(e) => updateCom('solemnizingJuratPlace', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Affiant CTC / Valid ID No.</label>
+                    <input
+                      type="text"
+                      placeholder="CTC / ID Number"
+                      value={currentCom.solemnizingAffiantCtc ?? ''}
+                      onChange={(e) => updateCom('solemnizingAffiantCtc', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>CTC Issued On</label>
+                    <input
+                      type="text"
+                      placeholder="Date issued"
+                      value={currentCom.solemnizingAffiantCtcDate ?? ''}
+                      onChange={(e) => updateCom('solemnizingAffiantCtcDate', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>CTC Issued At</label>
+                    <input
+                      type="text"
+                      placeholder="Place issued"
+                      value={currentCom.solemnizingAffiantCtcPlace ?? ''}
+                      onChange={(e) => updateCom('solemnizingAffiantCtcPlace', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Administering Officer Name</label>
+                    <input
+                      type="text"
+                      placeholder="ATTY. GREGORIO L. SANTOS"
+                      value={currentCom.solemnizingAdminOfficerName ?? ''}
+                      onChange={(e) => updateCom('solemnizingAdminOfficerName', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Title / Designation</label>
+                    <input
+                      type="text"
+                      placeholder="Municipal Civil Registrar"
+                      value={currentCom.solemnizingAdminOfficerTitle ?? ''}
+                      onChange={(e) => updateCom('solemnizingAdminOfficerTitle', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Officer Address</label>
+                    <input
+                      type="text"
+                      placeholder="Sagbayan, Bohol"
+                      value={currentCom.solemnizingAdminOfficerAddress ?? ''}
+                      onChange={(e) => updateCom('solemnizingAdminOfficerAddress', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </fieldset>
+
+          {/* Affidavit for Delayed Registration of Marriage */}
+          <fieldset className={fieldsetClass}>
+            <legend className={legendClass}>Page 2: Affidavit for Delayed Registration of Marriage</legend>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-purple-700/40 bg-purple-50/40">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(currentCom.affidavitDelayedReg)}
+                  onChange={(e) => updateCom('affidavitDelayedReg', e.target.checked)}
+                  className="w-4 h-4 rounded accent-purple-700 shrink-0"
+                />
+                <span className="text-xs font-medium text-slate-800">
+                  Include Affidavit for Delayed Registration of Marriage
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={autofillDelayedFromPage1}
+                className={shortcutBtnClass}
+              >
+                <Copy className="w-3 h-3" />
+                <span>Auto-fill from Page 1</span>
+              </button>
+            </div>
+
+            {currentCom.affidavitDelayedReg && (
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Affiant Name</label>
+                    <input
+                      type="text"
+                      placeholder="Full name of affiant"
+                      value={currentCom.delayedAffiantName || ''}
+                      onChange={(e) => updateCom('delayedAffiantName', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Affiant Civil Status</label>
+                    <select
+                      value={currentCom.delayedAffiantCivilStatus || 'married'}
+                      onChange={(e) => updateCom('delayedAffiantCivilStatus', e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="single">Single</option>
+                      <option value="married">Married</option>
+                      <option value="divorced">Divorced</option>
+                      <option value="widow">Widow / Widower</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass}>Affiant Residence &amp; Postal Address</label>
+                    <SingleLinePhilippineAddressInput
+                      variant="com"
+                      showBarangay={true}
+                      showStreet={true}
+                      includeCountry={false}
+                      value={currentCom.delayedAffiantResidence || ''}
+                      onChange={(nextVal) => updateCom('delayedAffiantResidence', nextVal)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Applicant Type</label>
+                    <select
+                      value={currentCom.delayedApplicantType || 'marriage_between'}
+                      onChange={(e) => updateCom('delayedApplicantType', e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="marriage_between">Marriage Between Contracting Parties</option>
+                      <option value="my_marriage">My Own Marriage With Spouse</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ceremony Type</label>
+                    <select
+                      value={currentCom.delayedCeremonyType || 'civil'}
+                      onChange={(e) => updateCom('delayedCeremonyType', e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="religious">a. Religious ceremony</option>
+                      <option value="civil">b. Civil ceremony</option>
+                      <option value="muslim">c. Muslim rites</option>
+                      <option value="tribal">d. Tribal rites</option>
+                    </select>
+                  </div>
+                  {currentCom.delayedApplicantType === 'my_marriage' && (
+                    <div className="sm:col-span-2">
+                      <label className={labelClass}>Spouse Name</label>
+                      <input
+                        type="text"
+                        placeholder="Full name of spouse"
+                        value={currentCom.delayedSpouseName || ''}
+                        onChange={(e) => updateCom('delayedSpouseName', e.target.value)}
+                        className={`${inputClass} uppercase`}
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className={labelClass}>Place of Marriage (Item 1)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. St. Augustine Parish, Sagbayan, Bohol"
+                      value={currentCom.delayedMarriagePlace || ''}
+                      onChange={(e) => updateCom('delayedMarriagePlace', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Date of Marriage (Item 1)</label>
+                    <input
+                      type="date"
+                      value={toIsoDateInput(currentCom.delayedMarriageDate)}
+                      onChange={(e) => updateCom('delayedMarriageDate', formatDateMMMMddYYYY(e.target.value))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Applicant Citizenship</label>
+                    <input
+                      type="text"
+                      placeholder="Filipino"
+                      value={currentCom.delayedApplicantCitizenship || ''}
+                      onChange={(e) => updateCom('delayedApplicantCitizenship', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Spouse Citizenship</label>
+                    <input
+                      type="text"
+                      placeholder="Filipino"
+                      value={currentCom.delayedSpouseCitizenship || ''}
+                      onChange={(e) => updateCom('delayedSpouseCitizenship', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Wife Citizenship (if other affiant)</label>
+                    <input
+                      type="text"
+                      placeholder="Filipino"
+                      value={currentCom.delayedWifeCitizenship || ''}
+                      onChange={(e) => updateCom('delayedWifeCitizenship', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Husband Citizenship (if other affiant)</label>
+                    <input
+                      type="text"
+                      placeholder="Filipino"
+                      value={currentCom.delayedHusbandCitizenship || ''}
+                      onChange={(e) => updateCom('delayedHusbandCitizenship', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass}>Reason for Delayed Registration</label>
+                    <input
+                      type="text"
+                      placeholder="Reason for registering late"
+                      value={currentCom.delayedReason || ''}
+                      onChange={(e) => updateCom('delayedReason', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>In Truth Whereof / Sworn Date</label>
+                    <input
+                      type="date"
+                      value={fromMonthDayYearToIso(
+                        currentCom.delayedSwornMonth,
+                        currentCom.delayedSwornDay,
+                        currentCom.delayedSwornYear
+                      )}
+                      onChange={(e) => {
+                        const parts = parseIsoDateToColbParts(e.target.value);
+                        onChange({
+                          ...data,
+                          com: {
+                            ...currentCom,
+                            affidavitDelayedReg: true,
+                            delayedSwornDay: parts ? parts.dayOrdinal : '',
+                            delayedSwornMonth: parts ? parts.monthName : '',
+                            delayedSwornYear: parts ? parts.year : '',
+                          },
+                        });
+                      }}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Sworn Place</label>
+                    <input
+                      type="text"
+                      placeholder="Sagbayan, Bohol"
+                      value={currentCom.delayedSwornPlace || ''}
+                      onChange={(e) => updateCom('delayedSwornPlace', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Affiant CTC / Valid ID</label>
+                    <input
+                      type="text"
+                      placeholder="CTC / Valid ID No."
+                      value={currentCom.delayedAffiantCtc || ''}
+                      onChange={(e) => updateCom('delayedAffiantCtc', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <label className={labelClass}>CTC Issued Date</label>
+                      <input
+                        type="text"
+                        placeholder="Date"
+                        value={currentCom.delayedAffiantCtcDate || ''}
+                        onChange={(e) => updateCom('delayedAffiantCtcDate', e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>CTC Issued Place</label>
+                      <input
+                        type="text"
+                        placeholder="Place"
+                        value={currentCom.delayedAffiantCtcPlace || ''}
+                        onChange={(e) => updateCom('delayedAffiantCtcPlace', e.target.value)}
+                        className={`${inputClass} uppercase`}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Administering Officer Name</label>
+                    <input
+                      type="text"
+                      placeholder="ATTY. GREGORIO L. SANTOS"
+                      value={currentCom.delayedAdminOfficerName || ''}
+                      onChange={(e) => updateCom('delayedAdminOfficerName', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Officer Title / Designation</label>
+                    <input
+                      type="text"
+                      placeholder="Municipal Civil Registrar"
+                      value={currentCom.delayedAdminOfficerTitle || ''}
+                      onChange={(e) => updateCom('delayedAdminOfficerTitle', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass}>Administering Officer Address</label>
+                    <input
+                      type="text"
+                      placeholder="Municipal Hall, Sagbayan, Bohol"
+                      value={currentCom.delayedAdminOfficerAddress || ''}
+                      onChange={(e) => updateCom('delayedAdminOfficerAddress', e.target.value)}
+                      className={`${inputClass} uppercase`}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </fieldset>
+        </div>
+      )}
+
+      {/* =================================================================== */}
       {/* GOOGLE FORM STEP NAVIGATION (BACK / NEXT)                           */}
       {/* =================================================================== */}
-      {!isEditingFile && (
+      {!(isEditingFile && isLocked) && (
         <div className="flex items-center justify-between gap-3 pt-1">
           {currentStep > 1 ? (
             <button
               type="button"
               onClick={() => goToStep(currentStep - 1)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
@@ -2155,7 +2920,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
               <button
                 type="button"
                 onClick={() => goToStep(currentStep + 1)}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold shadow-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <span>Next</span>
                 <ChevronRight className="w-4 h-4" />
@@ -2165,7 +2930,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 <button
                   type="button"
                   onClick={() => goToStep(1)}
-                  className="px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors"
+                  className="px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors cursor-pointer"
                 >
                   Back to Start
                 </button>
@@ -2173,7 +2938,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   <button
                     type="button"
                     onClick={handleSaveClick}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold shadow-xs transition-colors"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold shadow-xs transition-colors cursor-pointer"
                   >
                     <Save className="w-4 h-4" />
                     <span>Save Draft</span>
