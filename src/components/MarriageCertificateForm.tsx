@@ -8,7 +8,8 @@ import { ComDetails, MarriageCertificateData } from '../types/certificate';
 import {
   calculateAge,
   formatName,
-  formatDateMMMMddYYYY,
+  formatDateMMMMDDYYYY,
+  normalizeNotApplicable,
   toIsoDateInput,
   fromMonthDayYearToIso,
   parseIsoDateToColbParts,
@@ -60,20 +61,18 @@ const getSteps = () => [
 
 const TOTAL_STEPS = 6;
 
-const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const LONG_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function parseIsoDateParts(dateStr: string, monthFormat: 'short' | 'long') {
+function parseIsoDateParts(dateStr: string) {
   if (!dateStr) return { day: '', month: '', year: '' };
   const parts = dateStr.split('-');
   if (parts.length !== 3) return { day: '', month: '', year: '' };
   const year = parts[0];
   const monthIdx = parseInt(parts[1], 10) - 1;
-  const list = monthFormat === 'short' ? SHORT_MONTHS : LONG_MONTHS;
-  const month = list[monthIdx] || parts[1];
+  const month = (LONG_MONTHS[monthIdx] || parts[1]).toUpperCase();
   const day = parts[2];
   return { day, month, year };
 }
@@ -94,7 +93,7 @@ function computeNumericAgeYears(birthDateStr: string, refDateStr?: string): stri
 }
 
 const inputClass =
-  'w-full px-3 py-2 text-sm text-slate-900 bg-white border border-purple-700 rounded-lg focus:outline-none focus:border-purple-900 focus:ring-2 focus:ring-purple-700/20 transition-colors placeholder:text-slate-400';
+  'w-full px-3 py-2 text-sm text-slate-900 bg-white border border-purple-700 rounded-lg focus:outline-none focus:border-purple-900 focus:ring-2 focus:ring-purple-700/20 transition-colors placeholder:text-slate-400 uppercase';
 
 const fieldsetClass =
   'bg-white rounded-xl border border-purple-700/45 px-4 pb-4 pt-2.5 space-y-3';
@@ -106,17 +105,6 @@ const subLabelClass = 'block text-[11px] text-slate-500 mt-1';
 
 const shortcutBtnClass =
   'inline-flex items-center gap-1 text-[11px] font-semibold text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-700/30 px-2 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer';
-
-function formatReadableDateFromIso(dateStr?: string): string {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  const mIdx = parseInt(parts[1], 10) - 1;
-  const monthName = LONG_MONTHS[mIdx];
-  if (!monthName) return dateStr;
-  const dayNum = parseInt(parts[2], 10);
-  return `${monthName} ${isNaN(dayNum) ? parts[2] : dayNum}, ${parts[0]}`;
-}
 
 export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = ({
   data,
@@ -181,7 +169,23 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     }
   };
 
-  const updateCom = (field: keyof ComDetails, val: unknown) => {
+  const COM_PRESERVE_CASE_FIELDS = new Set<keyof ComDetails>([
+    'marriageSettlement',
+    'marriageTimeAmPm',
+    'licenseType',
+    'solemnizingQualification',
+    'delayedApplicantType',
+    'delayedAffiantCivilStatus',
+    'delayedCeremonyType',
+  ]);
+
+  const updateCom = (field: keyof ComDetails, rawVal: unknown) => {
+    const val =
+      typeof rawVal === 'string'
+        ? COM_PRESERVE_CASE_FIELDS.has(field)
+          ? rawVal
+          : normalizeNotApplicable(rawVal).toUpperCase()
+        : rawVal;
     const nextCom = { ...currentCom, [field]: val };
     if (String(field).startsWith('delayed') && val) {
       nextCom.affidavitDelayedReg = true;
@@ -228,6 +232,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
         nextMarriage.cityMunicipality = val;
       } else if (field === 'solemnizingOfficerName') {
         nextMarriage.officiantName = val;
+      } else if (field === 'marriageTime') {
+        nextMarriage.timeOfMarriage = val;
       } else if (field === 'witness1') {
         nextAdditional.witness1Name = val;
       } else if (field === 'witness2') {
@@ -269,7 +275,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     });
   };
 
-  const updateGroom = (field: keyof typeof groom, val: string) => {
+  const updateGroom = (field: keyof typeof groom, rawVal: string) => {
+    const val = field === 'dateOfBirth' ? rawVal : normalizeNotApplicable(rawVal).toUpperCase();
     const updated = { ...groom, [field]: val };
     const nextCom: ComDetails = { ...currentCom };
 
@@ -282,7 +289,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       nextCom.husbandMiddleName = m;
       nextCom.husbandLastName = l;
     } else if (field === 'dateOfBirth') {
-      const { day, month, year } = parseIsoDateParts(val, 'short');
+      const { day, month, year } = parseIsoDateParts(val);
       nextCom.husbandDobDay = day;
       nextCom.husbandDobMonth = month;
       nextCom.husbandDobYear = year;
@@ -302,7 +309,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     });
   };
 
-  const updateBride = (field: keyof typeof bride, val: string) => {
+  const updateBride = (field: keyof typeof bride, rawVal: string) => {
+    const val = field === 'dateOfBirth' ? rawVal : normalizeNotApplicable(rawVal).toUpperCase();
     const updated = { ...bride, [field]: val };
     const nextCom: ComDetails = { ...currentCom };
 
@@ -315,7 +323,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       nextCom.wifeMiddleName = m;
       nextCom.wifeLastName = l;
     } else if (field === 'dateOfBirth') {
-      const { day, month, year } = parseIsoDateParts(val, 'short');
+      const { day, month, year } = parseIsoDateParts(val);
       nextCom.wifeDobDay = day;
       nextCom.wifeDobMonth = month;
       nextCom.wifeDobYear = year;
@@ -335,12 +343,13 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     });
   };
 
-  const updateMarriage = (field: keyof typeof marriage, val: string) => {
+  const updateMarriage = (field: keyof typeof marriage, rawVal: string) => {
+    const val = field === 'dateOfMarriage' ? rawVal : normalizeNotApplicable(rawVal).toUpperCase();
     const updated = { ...marriage, [field]: val };
     const nextCom: ComDetails = { ...currentCom };
 
     if (field === 'dateOfMarriage') {
-      const { day, month, year } = parseIsoDateParts(val, 'long');
+      const { day, month, year } = parseIsoDateParts(val);
       nextCom.marriageDay = day;
       nextCom.marriageMonth = month;
       nextCom.marriageYear = year;
@@ -373,7 +382,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     });
   };
 
-  const updateAdditional = (field: keyof typeof additional, val: string) => {
+  const updateAdditional = (field: keyof typeof additional, rawVal: string) => {
+    const val = normalizeNotApplicable(rawVal).toUpperCase();
     const nextCom: ComDetails = { ...currentCom };
     if (field === 'witness1Name') nextCom.witness1 = val;
     if (field === 'witness2Name') nextCom.witness2 = val;
@@ -412,8 +422,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
         solemnizingAdminOfficerName:
           currentCom.solemnizingAdminOfficerName || currentCom.registeredByName || currentCom.receivedByName || '',
         solemnizingAdminOfficerTitle:
-          currentCom.solemnizingAdminOfficerTitle || currentCom.registeredByTitle || 'Municipal Civil Registrar',
-        solemnizingAdminOfficerAddress: currentCom.solemnizingAdminOfficerAddress || lcrPlace,
+          (currentCom.solemnizingAdminOfficerTitle || currentCom.registeredByTitle || 'MUNICIPAL CIVIL REGISTRAR').toUpperCase(),
+        solemnizingAdminOfficerAddress: (currentCom.solemnizingAdminOfficerAddress || lcrPlace).toUpperCase(),
       },
     });
   };
@@ -424,8 +434,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     const venue = currentCom.placeOfMarriageVenue || marriage.placeOfMarriage || '';
     const city = currentCom.placeOfMarriageCity || marriage.cityMunicipality || currentCom.cityMunicipality || '';
     const prov = currentCom.placeOfMarriageProvince || marriage.provinceState || currentCom.province || '';
-    const fullPlace = [venue, city, prov].filter(Boolean).join(', ') || currentCom.placeOfMarriage || '';
-    const lcrPlace = [city, prov].filter(Boolean).join(', ');
+    const fullPlace = [venue, city, prov].filter(Boolean).join(', ').toUpperCase() || (currentCom.placeOfMarriage || '').toUpperCase();
+    const lcrPlace = [city, prov].filter(Boolean).join(', ').toUpperCase();
     const cTypeLower = (marriage.ceremonyType || '').toLowerCase();
     const inferredCeremony: 'religious' | 'civil' | 'muslim' | 'tribal' =
       cTypeLower.includes('relig') || cTypeLower.includes('church') || cTypeLower.includes('catholic')
@@ -441,34 +451,188 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
       com: {
         ...currentCom,
         affidavitDelayedReg: true,
-        delayedAffiantName: currentCom.delayedAffiantName || hName || wName || '',
+        delayedAffiantName: (currentCom.delayedAffiantName || hName || wName || '').toUpperCase(),
         delayedAffiantCivilStatus: currentCom.delayedAffiantCivilStatus || 'married',
         delayedAffiantResidence:
-          currentCom.delayedAffiantResidence || currentCom.husbandResidence || groom.currentAddress || '',
-        delayedSpouseName: currentCom.delayedSpouseName || wName || '',
-        delayedMarriagePlace: currentCom.delayedMarriagePlace || fullPlace,
-        delayedMarriageDate: currentCom.delayedMarriageDate || formatReadableDateFromIso(marriage.dateOfMarriage),
+          (currentCom.delayedAffiantResidence || currentCom.husbandResidence || groom.currentAddress || '').toUpperCase(),
+        delayedSpouseName: (currentCom.delayedSpouseName || wName || '').toUpperCase(),
+        delayedMarriagePlace: (currentCom.delayedMarriagePlace || fullPlace).toUpperCase(),
+        delayedMarriageDate: currentCom.delayedMarriageDate || formatDateMMMMDDYYYY(marriage.dateOfMarriage),
         delayedCeremonyType: currentCom.delayedCeremonyType || inferredCeremony,
         delayedApplicantCitizenship:
-          currentCom.delayedApplicantCitizenship || currentCom.husbandCitizenship || groom.nationality || 'Filipino',
+          (currentCom.delayedApplicantCitizenship || currentCom.husbandCitizenship || groom.nationality || 'FILIPINO').toUpperCase(),
         delayedSpouseCitizenship:
-          currentCom.delayedSpouseCitizenship || currentCom.wifeCitizenship || bride.nationality || 'Filipino',
+          (currentCom.delayedSpouseCitizenship || currentCom.wifeCitizenship || bride.nationality || 'FILIPINO').toUpperCase(),
         delayedHusbandCitizenship:
-          currentCom.delayedHusbandCitizenship || currentCom.husbandCitizenship || groom.nationality || 'Filipino',
+          (currentCom.delayedHusbandCitizenship || currentCom.husbandCitizenship || groom.nationality || 'FILIPINO').toUpperCase(),
         delayedWifeCitizenship:
-          currentCom.delayedWifeCitizenship || currentCom.wifeCitizenship || bride.nationality || 'Filipino',
-        delayedSwornPlace: currentCom.delayedSwornPlace || lcrPlace,
+          (currentCom.delayedWifeCitizenship || currentCom.wifeCitizenship || bride.nationality || 'FILIPINO').toUpperCase(),
+        delayedSwornPlace: (currentCom.delayedSwornPlace || lcrPlace).toUpperCase(),
         delayedAdminOfficerName:
-          currentCom.delayedAdminOfficerName || currentCom.registeredByName || currentCom.receivedByName || '',
+          (currentCom.delayedAdminOfficerName || currentCom.registeredByName || currentCom.receivedByName || '').toUpperCase(),
         delayedAdminOfficerTitle:
-          currentCom.delayedAdminOfficerTitle || currentCom.registeredByTitle || 'Municipal Civil Registrar',
-        delayedAdminOfficerAddress: currentCom.delayedAdminOfficerAddress || lcrPlace,
+          (currentCom.delayedAdminOfficerTitle || currentCom.registeredByTitle || 'MUNICIPAL CIVIL REGISTRAR').toUpperCase(),
+        delayedAdminOfficerAddress: (currentCom.delayedAdminOfficerAddress || lcrPlace).toUpperCase(),
       },
     });
   };
 
   const groomAge = calculateAge(groom.dateOfBirth, marriage.dateOfMarriage);
   const brideAge = calculateAge(bride.dateOfBirth, marriage.dateOfMarriage);
+
+  const getConsentNameParts = (side: 'husband' | 'wife') => {
+    const first =
+      side === 'husband' ? currentCom.husbandConsentFirstName : currentCom.wifeConsentFirstName;
+    const middle =
+      side === 'husband' ? currentCom.husbandConsentMiddleName : currentCom.wifeConsentMiddleName;
+    const last =
+      side === 'husband' ? currentCom.husbandConsentLastName : currentCom.wifeConsentLastName;
+    const legacy =
+      side === 'husband' ? currentCom.husbandConsentPerson : currentCom.wifeConsentPerson;
+
+    if (first !== undefined || middle !== undefined || last !== undefined) {
+      return {
+        first: first ?? '',
+        middle: middle ?? '',
+        last: last ?? '',
+      };
+    }
+    const trimmed = normalizeNotApplicable((legacy || '').trim()).trim().toUpperCase();
+    if (!trimmed) return { first: '', middle: '', last: '' };
+    if (trimmed === 'N/A') return { first: '', middle: 'N/A', last: '' };
+    const tokens = trimmed.split(/\s+/).filter(Boolean);
+    if (tokens.length === 1) return { first: tokens[0], middle: '', last: '' };
+    if (tokens.length === 2) return { first: tokens[0], middle: '', last: tokens[1] };
+    return {
+      first: tokens[0],
+      middle: tokens.slice(1, -1).join(' '),
+      last: tokens[tokens.length - 1],
+    };
+  };
+
+  const updateConsentNamePart = (
+    side: 'husband' | 'wife',
+    part: 'first' | 'middle' | 'last',
+    rawVal: string
+  ) => {
+    const currentParts = getConsentNameParts(side);
+    const cleaned = normalizeNotApplicable(rawVal).toUpperCase();
+    const nextParts = {
+      ...currentParts,
+      [part]: cleaned,
+    };
+    const combined =
+      !nextParts.first.trim() &&
+      !nextParts.last.trim() &&
+      nextParts.middle.trim().toUpperCase() === 'N/A'
+        ? 'N/A'
+        : formatName(nextParts.first, nextParts.middle, nextParts.last);
+
+    onChange({
+      ...data,
+      com: {
+        ...currentCom,
+        ...(side === 'husband'
+          ? {
+              husbandConsentFirstName: nextParts.first,
+              husbandConsentMiddleName: nextParts.middle,
+              husbandConsentLastName: nextParts.last,
+              husbandConsentPerson: combined,
+            }
+          : {
+              wifeConsentFirstName: nextParts.first,
+              wifeConsentMiddleName: nextParts.middle,
+              wifeConsentLastName: nextParts.last,
+              wifeConsentPerson: combined,
+            }),
+      },
+    });
+  };
+
+  const renderTimeOfMarriageControl = () => {
+    const rawTime = currentCom.marriageTime || marriage.timeOfMarriage || '';
+    const timePeriod: 'AM' | 'PM' = /\bpm\b/i.test(rawTime)
+      ? 'PM'
+      : /\bam\b/i.test(rawTime)
+      ? 'AM'
+      : currentCom.marriageTimeAmPm === 'pm'
+      ? 'PM'
+      : 'AM';
+    const timeDigits = rawTime.replace(/\s*\b(am|pm)\b\s*$/i, '');
+
+    const commitTime = (nextDigits: string, nextPeriod: 'AM' | 'PM') => {
+      const cleanedDigits = nextDigits.replace(/\b(am|pm)\b/gi, '').trim().toUpperCase();
+      const composed = cleanedDigits ? `${cleanedDigits} ${nextPeriod}` : '';
+      onChange({
+        ...data,
+        marriage: { ...marriage, timeOfMarriage: composed },
+        com: {
+          ...currentCom,
+          marriageTime: composed,
+          marriageTimeAmPm: nextPeriod.toLowerCase() as 'am' | 'pm',
+        },
+      });
+    };
+
+    return (
+      // <div className="flex items-center gap-2">
+      //   <input
+      //     type="text"
+      //     value={timeDigits}
+      //     onChange={(e) => commitTime(e.target.value, timePeriod)}
+      //     placeholder="07:35"
+      //     className={`${inputClass} flex-1 min-w-0`}
+      //   />
+      //   <select
+      //     aria-label="Time of marriage AM/PM"
+      //     value={timePeriod}
+      //     onChange={(e) => commitTime(timeDigits, e.target.value === 'PM' ? 'PM' : 'AM')}
+      //     className={`${inputClass} w-24 shrink-0 cursor-pointer`}
+      //   >
+      //     <option value="AM">AM</option>
+      //     <option value="PM">PM</option>
+      //   </select>
+      // </div>
+
+
+     <div className="flex w-full items-center gap-2">
+  <input
+    type="text"
+    value={timeDigits}
+    onChange={(e) => commitTime(e.target.value, timePeriod)}
+    placeholder="07:35"
+    className={`${inputClass} !w-0 flex-1 min-w-0`}
+  />
+
+  <select
+    aria-label="Time of marriage AM/PM"
+    value={timePeriod}
+    onChange={(e) =>
+      commitTime(timeDigits, e.target.value === 'PM' ? 'PM' : 'AM')
+    }
+    className={`${inputClass} !w-[75px] !shrink-0 cursor-pointer`}
+  >
+    <option value="AM">AM</option>
+    <option value="PM">PM</option>
+  </select>
+</div>
+
+    );
+  };
+
+  const updateWitnessWhereofDate = (isoVal: string) => {
+    const { day, month, year } = parseIsoDateParts(isoVal);
+    onChange({
+      ...data,
+      com: {
+        ...currentCom,
+        witnessWhereofDate: isoVal ? formatDateMMMMDDYYYY(isoVal) : '',
+        witnessWhereofDay: day,
+        witnessWhereofMonth: month,
+        witnessWhereofYear: year,
+      },
+    });
+  };
 
   const steps = getSteps();
   const activeStepMeta = steps[currentStep - 1];
@@ -477,10 +641,10 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
   return (
     <div ref={formTopRef} className="space-y-3.5 scroll-mt-20">
       <datalist id="com-civil-status-options">
-        <option value="Single" />
-        <option value="Widowed" />
-        <option value="Divorced" />
-        <option value="Annulled" />
+        <option value="SINGLE" />
+        <option value="WIDOWED" />
+        <option value="DIVORCED" />
+        <option value="ANNULLED" />
       </datalist>
 
       {/* Home Button Above Form */}
@@ -691,7 +855,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                       '1. Full Name',
                       formatName(groom.firstName, groom.middleName, groom.lastName) || groom.fullName,
                     ],
-                    ['2a. Date of Birth', groom.dateOfBirth],
+                    ['2a. Date of Birth', formatDateMMMMDDYYYY(groom.dateOfBirth)],
                     ['2b. Age at Marriage', currentCom.husbandAge],
                     ['3. Place of Birth', groom.placeOfBirth],
                     ['4b. Citizenship', currentCom.husbandCitizenship || groom.nationality],
@@ -718,13 +882,22 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     ['11. Mother Citizenship', currentCom.husbandMotherCitizenship],
                     [
                       '12–14. Consent / Wali',
-                      [
-                        currentCom.husbandConsentPerson,
-                        currentCom.husbandConsentRelationship,
-                        currentCom.husbandConsentResidence,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || 'N/A',
+                      (() => {
+                        const p = getConsentNameParts('husband');
+                        const fullConsent =
+                          !p.first.trim() && !p.last.trim() && p.middle.trim().toUpperCase() === 'N/A'
+                            ? 'N/A'
+                            : formatName(p.first, p.middle, p.last);
+                        return (
+                          [
+                            fullConsent,
+                            currentCom.husbandConsentRelationship,
+                            currentCom.husbandConsentResidence,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || 'N/A'
+                        );
+                      })(),
                     ],
                   ],
                 },
@@ -735,7 +908,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                       '1. Full Name',
                       formatName(bride.firstName, bride.middleName, bride.lastName) || bride.fullName,
                     ],
-                    ['2a. Date of Birth', bride.dateOfBirth],
+                    ['2a. Date of Birth', formatDateMMMMDDYYYY(bride.dateOfBirth)],
                     ['2b. Age at Marriage', currentCom.wifeAge],
                     ['3. Place of Birth', bride.placeOfBirth],
                     ['4b. Citizenship', currentCom.wifeCitizenship || bride.nationality],
@@ -762,13 +935,22 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     ['11. Mother Citizenship', currentCom.wifeMotherCitizenship],
                     [
                       '12–14. Consent / Wali',
-                      [
-                        currentCom.wifeConsentPerson,
-                        currentCom.wifeConsentRelationship,
-                        currentCom.wifeConsentResidence,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || 'N/A',
+                      (() => {
+                        const p = getConsentNameParts('wife');
+                        const fullConsent =
+                          !p.first.trim() && !p.last.trim() && p.middle.trim().toUpperCase() === 'N/A'
+                            ? 'N/A'
+                            : formatName(p.first, p.middle, p.last);
+                        return (
+                          [
+                            fullConsent,
+                            currentCom.wifeConsentRelationship,
+                            currentCom.wifeConsentResidence,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || 'N/A'
+                        );
+                      })(),
                     ],
                   ],
                 },
@@ -785,15 +967,33 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                         .filter(Boolean)
                         .join(', ') || currentCom.placeOfMarriage,
                     ],
-                    ['16. Date of Marriage', marriage.dateOfMarriage],
-                    ['17. Time of Marriage', marriage.timeOfMarriage],
+                    ['16. Date of Marriage', formatDateMMMMDDYYYY(marriage.dateOfMarriage)],
+                    [
+                      '17. Time of Marriage',
+                      currentCom.marriageTime
+                        ? /\b(am|pm)\b/i.test(currentCom.marriageTime)
+                          ? currentCom.marriageTime
+                          : `${currentCom.marriageTime} ${(currentCom.marriageTimeAmPm || '').toUpperCase()}`.trim()
+                        : marriage.timeOfMarriage || '',
+                    ],
                     [
                       '18. Marriage Settlement',
                       currentCom.marriageSettlement === 'entered'
-                        ? 'Entered into a marriage settlement'
+                        ? 'ENTERED INTO A MARRIAGE SETTLEMENT'
                         : currentCom.marriageSettlement === 'not_entered'
-                        ? 'Not entered into a marriage settlement'
+                        ? 'NOT ENTERED INTO A MARRIAGE SETTLEMENT'
                         : '',
+                    ],
+                    [
+                      '18. In Witness Whereof Date',
+                      formatDateMMMMDDYYYY(
+                        currentCom.witnessWhereofDate ||
+                          fromMonthDayYearToIso(
+                            currentCom.witnessWhereofMonth,
+                            currentCom.witnessWhereofDay,
+                            currentCom.witnessWhereofYear
+                          )
+                      ),
                     ],
                     ['Ceremony Type', marriage.ceremonyType],
                   ],
@@ -805,16 +1005,16 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                       '19a–c. License / Legal Basis',
                       currentCom.licenseType === 'license'
                         ? [
-                            currentCom.marriageLicenseNo && `License No. ${currentCom.marriageLicenseNo}`,
-                            currentCom.licenseIssuedDate,
+                            currentCom.marriageLicenseNo && `LICENSE NO. ${currentCom.marriageLicenseNo}`,
+                            formatDateMMMMDDYYYY(currentCom.licenseIssuedDate),
                             currentCom.licenseIssuedPlace,
                           ]
                             .filter(Boolean)
-                            .join(' · ') || 'With Marriage License'
+                            .join(' · ') || 'WITH MARRIAGE LICENSE'
                         : currentCom.licenseType === 'art_209'
-                        ? `Art. ${currentCom.art209Specify || ''} of E.O. 209`.trim()
+                        ? `ART. ${currentCom.art209Specify || ''} OF E.O. 209`.trim()
                         : currentCom.licenseType === 'pd_1083'
-                        ? 'Under P.D. No. 1083'
+                        ? 'UNDER P.D. NO. 1083'
                         : '',
                     ],
                     [
@@ -845,13 +1045,21 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     ],
                     [
                       '21. Received By (LCRO)',
-                      [currentCom.receivedByName, currentCom.receivedByTitle, currentCom.receivedByDate]
+                      [
+                        currentCom.receivedByName,
+                        currentCom.receivedByTitle,
+                        formatDateMMMMDDYYYY(currentCom.receivedByDate),
+                      ]
                         .filter(Boolean)
                         .join(' · '),
                     ],
                     [
                       '22. Registered By',
-                      [currentCom.registeredByName, currentCom.registeredByTitle, currentCom.registeredByDate]
+                      [
+                        currentCom.registeredByName,
+                        currentCom.registeredByTitle,
+                        formatDateMMMMDDYYYY(currentCom.registeredByDate),
+                      ]
                         .filter(Boolean)
                         .join(' · '),
                     ],
@@ -911,8 +1119,8 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                       <td className="py-2 px-4 text-slate-500 font-medium align-top">
                         {fieldLabel}
                       </td>
-                      <td className="py-2 px-4 text-slate-900 font-medium tabular-nums break-words">
-                        {fieldValue ? String(fieldValue) : <span className="text-slate-300">—</span>}
+                      <td className="py-2 px-4 text-slate-900 font-medium tabular-nums break-words uppercase">
+                        {fieldValue ? String(fieldValue).toUpperCase() : <span className="text-slate-300">—</span>}
                       </td>
                     </tr>
                   ))}
@@ -982,7 +1190,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 </div>
                 <input
                   type="date"
-                  value={groom.dateOfBirth ?? ''}
+                  value={toIsoDateInput(groom.dateOfBirth)}
                   onChange={(e) => updateGroom('dateOfBirth', e.target.value)}
                   className={inputClass}
                 />
@@ -1180,6 +1388,9 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     ...data,
                     com: {
                       ...currentCom,
+                      husbandConsentFirstName: '',
+                      husbandConsentMiddleName: 'N/A',
+                      husbandConsentLastName: '',
                       husbandConsentPerson: 'N/A',
                       husbandConsentRelationship: 'N/A',
                       husbandConsentResidence: 'N/A',
@@ -1188,31 +1399,61 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 }
                 className={shortcutBtnClass}
               >
-                <span>Not Applicable (N/A)</span>
+                <span>Set N/A</span>
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>12. Name of Person / Wali</label>
-                <input
-                  type="text"
-                  value={currentCom.husbandConsentPerson ?? ''}
-                  onChange={(e) => updateCom('husbandConsentPerson', e.target.value)}
-                  placeholder="First Middle Last"
-                  className={`${inputClass} uppercase`}
-                />
-              </div>
+            {(() => {
+              const hConsent = getConsentNameParts('husband');
+              return (
+                <div>
+                  <span className="block text-[13px] font-medium text-slate-900 mb-1.5">
+                    12. Name of Person / Wali
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={hConsent.first}
+                        onChange={(e) => updateConsentNamePart('husband', 'first', e.target.value)}
+                        placeholder="e.g. JUAN CARLOS"
+                        className={`${inputClass} uppercase`}
+                      />
+                      <span className={subLabelClass}>First Name</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={hConsent.middle}
+                        onChange={(e) => updateConsentNamePart('husband', 'middle', e.target.value)}
+                        placeholder="e.g. GARCIA"
+                        className={`${inputClass} uppercase`}
+                      />
+                      <span className={subLabelClass}>Middle Name</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={hConsent.last}
+                        onChange={(e) => updateConsentNamePart('husband', 'last', e.target.value)}
+                        placeholder="e.g. DELA CRUZ"
+                        className={`${inputClass} uppercase`}
+                      />
+                      <span className={subLabelClass}>Last Name</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
-              <div>
-                <label className={labelClass}>13. Relationship</label>
-                <input
-                  type="text"
-                  value={currentCom.husbandConsentRelationship ?? ''}
-                  onChange={(e) => updateCom('husbandConsentRelationship', e.target.value)}
-                  placeholder="e.g. Father / Mother / Guardian"
-                  className={inputClass}
-                />
-              </div>
+            <div>
+              <label className={labelClass}>13. Relationship</label>
+              <input
+                type="text"
+                value={currentCom.husbandConsentRelationship ?? ''}
+                onChange={(e) => updateCom('husbandConsentRelationship', e.target.value)}
+                placeholder="e.g. Father / Mother / Guardian"
+                className={inputClass}
+              />
             </div>
 
             <div>
@@ -1303,7 +1544,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 </div>
                 <input
                   type="date"
-                  value={bride.dateOfBirth ?? ''}
+                  value={toIsoDateInput(bride.dateOfBirth)}
                   onChange={(e) => updateBride('dateOfBirth', e.target.value)}
                   className={inputClass}
                 />
@@ -1353,7 +1594,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   <button
                     type="button"
                     onClick={() =>
-                      updateCom('wifeCitizenship', currentCom.husbandCitizenship || groom.nationality || 'Filipino')
+                      updateCom('wifeCitizenship', currentCom.husbandCitizenship || groom.nationality || 'FILIPINO')
                     }
                     className={shortcutBtnClass}
                   >
@@ -1537,6 +1778,9 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     ...data,
                     com: {
                       ...currentCom,
+                      wifeConsentFirstName: '',
+                      wifeConsentMiddleName: 'N/A',
+                      wifeConsentLastName: '',
                       wifeConsentPerson: 'N/A',
                       wifeConsentRelationship: 'N/A',
                       wifeConsentResidence: 'N/A',
@@ -1545,31 +1789,61 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 }
                 className={shortcutBtnClass}
               >
-                <span>Not Applicable (N/A)</span>
+                <span>Set N/A</span>
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>12. Name of Person / Wali</label>
-                <input
-                  type="text"
-                  value={currentCom.wifeConsentPerson ?? ''}
-                  onChange={(e) => updateCom('wifeConsentPerson', e.target.value)}
-                  placeholder="First Middle Last"
-                  className={`${inputClass} uppercase`}
-                />
-              </div>
+            {(() => {
+              const wConsent = getConsentNameParts('wife');
+              return (
+                <div>
+                  <span className="block text-[13px] font-medium text-slate-900 mb-1.5">
+                    12. Name of Person / Wali
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={wConsent.first}
+                        onChange={(e) => updateConsentNamePart('wife', 'first', e.target.value)}
+                        placeholder="e.g. MARIA CLARA"
+                        className={`${inputClass} uppercase`}
+                      />
+                      <span className={subLabelClass}>First Name</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={wConsent.middle}
+                        onChange={(e) => updateConsentNamePart('wife', 'middle', e.target.value)}
+                        placeholder="e.g. LOPEZ"
+                        className={`${inputClass} uppercase`}
+                      />
+                      <span className={subLabelClass}>Middle Name</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={wConsent.last}
+                        onChange={(e) => updateConsentNamePart('wife', 'last', e.target.value)}
+                        placeholder="e.g. SANTOS"
+                        className={`${inputClass} uppercase`}
+                      />
+                      <span className={subLabelClass}>Last Name</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
-              <div>
-                <label className={labelClass}>13. Relationship</label>
-                <input
-                  type="text"
-                  value={currentCom.wifeConsentRelationship ?? ''}
-                  onChange={(e) => updateCom('wifeConsentRelationship', e.target.value)}
-                  placeholder="e.g. Father / Mother / Guardian"
-                  className={inputClass}
-                />
-              </div>
+            <div>
+              <label className={labelClass}>13. Relationship</label>
+              <input
+                type="text"
+                value={currentCom.wifeConsentRelationship ?? ''}
+                onChange={(e) => updateCom('wifeConsentRelationship', e.target.value)}
+                placeholder="e.g. Father / Mother / Guardian"
+                className={inputClass}
+              />
             </div>
 
             <div>
@@ -1615,7 +1889,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 </label>
                 <input
                   type="date"
-                  value={marriage.dateOfMarriage ?? ''}
+                  value={toIsoDateInput(marriage.dateOfMarriage)}
                   onChange={(e) => updateMarriage('dateOfMarriage', e.target.value)}
                   className={inputClass}
                 />
@@ -1626,13 +1900,7 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   <Clock className="w-3.5 h-3.5 text-purple-700" />
                   <span>17. Time of Marriage</span>
                 </label>
-                <input
-                  type="text"
-                  value={marriage.timeOfMarriage ?? ''}
-                  onChange={(e) => updateMarriage('timeOfMarriage', e.target.value)}
-                  placeholder="e.g. 10:00 AM"
-                  className={inputClass}
-                />
+                {renderTimeOfMarriageControl()}
               </div>
             </div>
           </fieldset>
@@ -1711,23 +1979,24 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   ...data,
                   marriage: {
                     ...marriage,
-                    placeOfMarriage: nextVenue,
-                    cityMunicipality: city,
-                    provinceState: prov,
-                    country: nextAddr.country,
+                    placeOfMarriage: nextVenue.toUpperCase(),
+                    cityMunicipality: city.toUpperCase(),
+                    provinceState: prov.toUpperCase(),
+                    country: nextAddr.country.toUpperCase(),
                   },
                   com: {
                     ...currentCom,
-                    placeOfMarriageVenue: nextVenue,
-                    placeOfMarriageBarangay: nextAddr.barangay,
-                    placeOfMarriageCity: city,
-                    placeOfMarriageProvince: prov,
-                    cityMunicipality: city || currentCom.cityMunicipality,
-                    province: prov || currentCom.province,
+                    placeOfMarriageVenue: nextVenue.toUpperCase(),
+                    placeOfMarriageBarangay: nextAddr.barangay.toUpperCase(),
+                    placeOfMarriageCity: city.toUpperCase(),
+                    placeOfMarriageProvince: prov.toUpperCase(),
+                    cityMunicipality: (city || currentCom.cityMunicipality || '').toUpperCase(),
+                    province: (prov || currentCom.province || '').toUpperCase(),
                     placeOfMarriage: [nextVenue, city, prov]
                       .map((p) => p?.trim())
                       .filter(Boolean)
-                      .join(', '),
+                      .join(', ')
+                      .toUpperCase(),
                   },
                 });
               }}
@@ -1787,6 +2056,23 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   Have <strong>entered</strong> into a marriage settlement (copy attached)
                 </span>
               </label>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 sm:max-w-xs">
+              <label className={labelClass}>18. In Witness Whereof Date</label>
+              <input
+                type="date"
+                value={
+                  toIsoDateInput(currentCom.witnessWhereofDate) ||
+                  fromMonthDayYearToIso(
+                    currentCom.witnessWhereofMonth,
+                    currentCom.witnessWhereofDay,
+                    currentCom.witnessWhereofYear
+                  )
+                }
+                onChange={(e) => updateWitnessWhereofDate(e.target.value)}
+                className={inputClass}
+              />
             </div>
           </fieldset>
 
@@ -1999,8 +2285,10 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                 <label className={labelClass}>Date of Preparation</label>
                 <input
                   type="date"
-                  value={additional.dateOfPreparation ?? ''}
-                  onChange={(e) => updateAdditional('dateOfPreparation', e.target.value)}
+                  value={toIsoDateInput(additional.dateOfPreparation)}
+                  onChange={(e) =>
+                    updateAdditional('dateOfPreparation', formatDateMMMMDDYYYY(e.target.value))
+                  }
                   className={inputClass}
                 />
               </div>
@@ -2139,8 +2427,10 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     <label className={labelClass}>License Issued Date</label>
                     <input
                       type="date"
-                      value={currentCom.licenseIssuedDate ?? ''}
-                      onChange={(e) => updateCom('licenseIssuedDate', e.target.value)}
+                      value={toIsoDateInput(currentCom.licenseIssuedDate)}
+                      onChange={(e) =>
+                        updateCom('licenseIssuedDate', formatDateMMMMDDYYYY(e.target.value))
+                      }
                       className={inputClass}
                     />
                   </div>
@@ -2262,8 +2552,10 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   <label className={labelClass}>Date</label>
                   <input
                     type="date"
-                    value={currentCom.receivedByDate ?? ''}
-                    onChange={(e) => updateCom('receivedByDate', e.target.value)}
+                    value={toIsoDateInput(currentCom.receivedByDate)}
+                    onChange={(e) =>
+                      updateCom('receivedByDate', formatDateMMMMDDYYYY(e.target.value))
+                    }
                     className={inputClass}
                   />
                 </div>
@@ -2317,8 +2609,10 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   <label className={labelClass}>Date</label>
                   <input
                     type="date"
-                    value={currentCom.registeredByDate ?? ''}
-                    onChange={(e) => updateCom('registeredByDate', e.target.value)}
+                    value={toIsoDateInput(currentCom.registeredByDate)}
+                    onChange={(e) =>
+                      updateCom('registeredByDate', formatDateMMMMDDYYYY(e.target.value))
+                    }
                     className={inputClass}
                   />
                 </div>
@@ -2571,10 +2865,11 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                   <div>
                     <label className={labelClass}>CTC Issued On</label>
                     <input
-                      type="text"
-                      placeholder="Date issued"
-                      value={currentCom.solemnizingAffiantCtcDate ?? ''}
-                      onChange={(e) => updateCom('solemnizingAffiantCtcDate', e.target.value)}
+                      type="date"
+                      value={toIsoDateInput(currentCom.solemnizingAffiantCtcDate)}
+                      onChange={(e) =>
+                        updateCom('solemnizingAffiantCtcDate', formatDateMMMMDDYYYY(e.target.value))
+                      }
                       className={inputClass}
                     />
                   </div>
@@ -2739,7 +3034,9 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     <input
                       type="date"
                       value={toIsoDateInput(currentCom.delayedMarriageDate)}
-                      onChange={(e) => updateCom('delayedMarriageDate', formatDateMMMMddYYYY(e.target.value))}
+                      onChange={(e) =>
+                        updateCom('delayedMarriageDate', formatDateMMMMDDYYYY(e.target.value))
+                      }
                       className={inputClass}
                     />
                   </div>
@@ -2842,10 +3139,11 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
                     <div>
                       <label className={labelClass}>CTC Issued Date</label>
                       <input
-                        type="text"
-                        placeholder="Date"
-                        value={currentCom.delayedAffiantCtcDate || ''}
-                        onChange={(e) => updateCom('delayedAffiantCtcDate', e.target.value)}
+                        type="date"
+                        value={toIsoDateInput(currentCom.delayedAffiantCtcDate)}
+                        onChange={(e) =>
+                          updateCom('delayedAffiantCtcDate', formatDateMMMMDDYYYY(e.target.value))
+                        }
                         className={inputClass}
                       />
                     </div>

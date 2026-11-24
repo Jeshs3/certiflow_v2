@@ -127,7 +127,26 @@ function parseMonthIndex(monthInput?: string): number {
 }
 
 /**
- * Normalize any date string (ISO YYYY-MM-DD, MM/DD/YYYY, or Month D, YYYY) to YYYY-MM-DD for <input type="date" />.
+ * Expand abbreviated or numeric month input to complete full month name (MMMM).
+ */
+export function toFullMonthName(monthInput?: string): string {
+  if (!monthInput) return '';
+  const cleaned = monthInput.trim();
+  if (!cleaned) return '';
+  const mIdx = parseMonthIndex(cleaned);
+  return (mIdx >= 0 ? MONTHS_LONG[mIdx] : cleaned).toUpperCase();
+}
+
+/**
+ * Replace any "Not Applicable" phrase with concise "N/A".
+ */
+export function normalizeNotApplicable(value?: string): string {
+  if (!value) return '';
+  return value.replace(/\bnot\s+applicable\b/gi, 'N/A');
+}
+
+/**
+ * Normalize any date string (ISO YYYY-MM-DD, MM/DD/YYYY, Month D, YYYY, or MMMM-DD-YYYY) to YYYY-MM-DD for <input type="date" />.
  */
 export function toIsoDateInput(dateStr?: string): string {
   if (!dateStr) return '';
@@ -148,6 +167,28 @@ export function toIsoDateInput(dateStr?: string): string {
     const dd = slashMatch[2].padStart(2, '0');
     const yyyy = slashMatch[3];
     return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const hyphenTextMatch = /^([A-Za-z]+)-(\d{1,2})(?:st|nd|rd|th)?-(\d{4})$/i.exec(trimmed);
+  if (hyphenTextMatch) {
+    const mIdx = parseMonthIndex(hyphenTextMatch[1]);
+    if (mIdx >= 0) {
+      const mm = String(mIdx + 1).padStart(2, '0');
+      const dd = hyphenTextMatch[2].padStart(2, '0');
+      const yyyy = hyphenTextMatch[3];
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+
+  const commaAfterMonthMatch = /^([A-Za-z]+),\s*(\d{1,2})(?:st|nd|rd|th)?\s+(\d{4})$/i.exec(trimmed);
+  if (commaAfterMonthMatch) {
+    const mIdx = parseMonthIndex(commaAfterMonthMatch[1]);
+    if (mIdx >= 0) {
+      const mm = String(mIdx + 1).padStart(2, '0');
+      const dd = commaAfterMonthMatch[2].padStart(2, '0');
+      const yyyy = commaAfterMonthMatch[3];
+      return `${yyyy}-${mm}-${dd}`;
+    }
   }
 
   const textMatch = /^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/i.exec(trimmed);
@@ -179,41 +220,75 @@ export function fromMonthDayYearToIso(month?: string, day?: string, year?: strin
 }
 
 /**
- * Format a date string strictly as "MMMM dd, YYYY" (e.g., "August 05, 2023").
+ * Format a date string strictly as "MMMM, DD YYYY" in uppercase (e.g., "SEPTEMBER, 10 2023").
  */
-export function formatDateMMMMddYYYY(dateStr?: string): string {
+export function formatDateMMMMCommaDDYYYY(dateStr?: string): string {
   if (!dateStr) return '';
   const trimmed = dateStr.trim();
   if (!trimmed) return '';
 
   const iso = toIsoDateInput(trimmed);
-  if (!iso) return trimmed;
+  if (!iso) return normalizeNotApplicable(trimmed).toUpperCase();
 
   const [yyyy, mmStr, ddStr] = iso.split('-');
   const mIdx = parseInt(mmStr, 10) - 1;
   const dNum = parseInt(ddStr, 10);
   const monthName = MONTHS_LONG[mIdx];
-  if (!monthName || isNaN(dNum)) return trimmed;
+  if (!monthName || isNaN(dNum)) return normalizeNotApplicable(trimmed).toUpperCase();
 
-  return `${monthName} ${String(dNum).padStart(2, '0')}, ${yyyy}`;
+  return `${monthName.toUpperCase()}, ${String(dNum).padStart(2, '0')} ${yyyy}`;
 }
 
 /**
- * Format day integer to ordinal string (e.g., 1 -> "1st", 2 -> "2nd", 10 -> "10th").
+ * Format a date string strictly as "MMMM DD, YYYY" in uppercase (e.g., "SEPTEMBER 10, 2023").
+ */
+export function formatDateMMMMDDYYYY(dateStr?: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  if (!trimmed) return '';
+
+  const iso = toIsoDateInput(trimmed);
+  if (!iso) return normalizeNotApplicable(trimmed).toUpperCase();
+
+  const [yyyy, mmStr, ddStr] = iso.split('-');
+  const mIdx = parseInt(mmStr, 10) - 1;
+  const dNum = parseInt(ddStr, 10);
+  const monthName = MONTHS_LONG[mIdx];
+  if (!monthName || isNaN(dNum)) return normalizeNotApplicable(trimmed).toUpperCase();
+
+  return `${monthName.toUpperCase()} ${String(dNum).padStart(2, '0')}, ${yyyy}`;
+}
+
+/**
+ * Format a date string strictly as "MMMM dd, YYYY" (legacy alias).
+ */
+export function formatDateMMMMddYYYY(dateStr?: string): string {
+  return formatDateMMMMCommaDDYYYY(dateStr);
+}
+
+/**
+ * Format a date string strictly as "MMMM-DD-YYYY" (legacy alias).
+ */
+export function formatDateMMMMHyphenDDYYYY(dateStr?: string): string {
+  return formatDateMMMMCommaDDYYYY(dateStr);
+}
+
+/**
+ * Format day integer to ordinal string (e.g., 1 -> "1ST", 2 -> "2ND", 10 -> "10TH").
  */
 export function toOrdinalDay(dayNum: number): string {
   if (isNaN(dayNum) || dayNum < 1) return '';
   const mod100 = dayNum % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${dayNum}th`;
+  if (mod100 >= 11 && mod100 <= 13) return `${dayNum}TH`;
   switch (dayNum % 10) {
     case 1:
-      return `${dayNum}st`;
+      return `${dayNum}ST`;
     case 2:
-      return `${dayNum}nd`;
+      return `${dayNum}ND`;
     case 3:
-      return `${dayNum}rd`;
+      return `${dayNum}RD`;
     default:
-      return `${dayNum}th`;
+      return `${dayNum}TH`;
   }
 }
 
@@ -235,7 +310,7 @@ export function parseIsoDateToColbParts(isoDate?: string): {
   const monthName = MONTHS_LONG[mIdx];
   if (!monthName || isNaN(dNum)) return null;
   return {
-    monthName,
+    monthName: monthName.toUpperCase(),
     day: String(dNum),
     dayPadded: String(dNum).padStart(2, '0'),
     dayOrdinal: toOrdinalDay(dNum),

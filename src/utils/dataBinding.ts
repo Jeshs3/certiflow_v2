@@ -856,7 +856,7 @@ export function parseDateComponents(dateStr?: string) {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   const monthIndex = parseInt(month, 10) - 1;
-  const monthName = monthNames[monthIndex] || month;
+  const monthName = (monthNames[monthIndex] || month).toUpperCase();
 
   return { day, month, monthName, year };
 }

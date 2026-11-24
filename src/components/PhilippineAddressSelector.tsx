@@ -192,7 +192,7 @@ export const SearchableLocationDropdown: React.FC<SearchableLocationDropdownProp
                 ref={searchInputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => setQuery(e.target.value.toUpperCase())}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     setIsOpen(false);
@@ -200,16 +200,16 @@ export const SearchableLocationDropdown: React.FC<SearchableLocationDropdownProp
                     e.preventDefault();
                     if (visibleOptions.length > 0) {
                       const picked = visibleOptions[0];
-                      onSelect(picked.value, picked);
+                      onSelect(picked.value.toUpperCase(), picked);
                       setIsOpen(false);
                     } else if (allowCustom && trimmedQuery) {
-                      onSelect(trimmedQuery);
+                      onSelect(trimmedQuery.toUpperCase());
                       setIsOpen(false);
                     }
                   }
                 }}
                 placeholder={searchPlaceholder}
-                className={`w-full pl-8 pr-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-md focus:outline-none ${theme.focusRing}`}
+                className={`w-full pl-8 pr-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-md focus:outline-none uppercase ${theme.focusRing}`}
               />
             </div>
           </div>
@@ -242,7 +242,7 @@ export const SearchableLocationDropdown: React.FC<SearchableLocationDropdownProp
                   key={`${opt.path || opt.value}-${opt.label}`}
                   type="button"
                   onClick={() => {
-                    onSelect(opt.value, opt);
+                    onSelect(opt.value.toUpperCase(), opt);
                     setIsOpen(false);
                   }}
                   className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
@@ -271,7 +271,7 @@ export const SearchableLocationDropdown: React.FC<SearchableLocationDropdownProp
               <button
                 type="button"
                 onClick={() => {
-                  onSelect(trimmedQuery);
+                  onSelect(trimmedQuery.toUpperCase());
                   setIsOpen(false);
                 }}
                 className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border-t border-slate-200 cursor-pointer"
@@ -564,11 +564,11 @@ export const PhilippineAddressSelector: React.FC<PhilippineAddressSelectorProps>
     if (autoCountrySyncedRef.current === syncKey) return;
     autoCountrySyncedRef.current = syncKey;
     onChange({
-      province,
-      cityMunicipality,
-      barangay: detectedBarangay,
-      street,
-      country: 'Philippines',
+      province: province.toUpperCase(),
+      cityMunicipality: cityMunicipality.toUpperCase(),
+      barangay: detectedBarangay.toUpperCase(),
+      street: street.toUpperCase(),
+      country: 'PHILIPPINES',
     });
   }, [matchedProvince, country, province, cityMunicipality, detectedBarangay, street, onChange]);
 
@@ -606,13 +606,14 @@ export const PhilippineAddressSelector: React.FC<PhilippineAddressSelectorProps>
           errorText={provincesError}
           variant={variant}
           onSelect={(val, opt) => {
-            const changed = normalizePhilatlasKey(val) !== normalizePhilatlasKey(province);
+            const upVal = val.toUpperCase();
+            const changed = normalizePhilatlasKey(upVal) !== normalizePhilatlasKey(province);
             if (changed) setLastSelectedBarangay('');
             emitChange({
-              province: val,
+              province: upVal,
               cityMunicipality: changed ? '' : cityMunicipality,
               barangay: changed ? '' : detectedBarangay,
-              country: opt?.path ? 'Philippines' : country,
+              country: opt?.path ? 'PHILIPPINES' : country,
             });
           }}
           onClear={() => {
@@ -639,12 +640,13 @@ export const PhilippineAddressSelector: React.FC<PhilippineAddressSelectorProps>
           errorText={municipalitiesError}
           variant={variant}
           onSelect={(val, opt) => {
-            const changed = normalizePhilatlasKey(val) !== normalizePhilatlasKey(cityMunicipality);
+            const upVal = val.toUpperCase();
+            const changed = normalizePhilatlasKey(upVal) !== normalizePhilatlasKey(cityMunicipality);
             if (changed) setLastSelectedBarangay('');
             emitChange({
-              cityMunicipality: val,
+              cityMunicipality: upVal,
               barangay: changed ? '' : detectedBarangay,
-              country: opt?.path || matchedProvince ? 'Philippines' : country,
+              country: opt?.path || matchedProvince ? 'PHILIPPINES' : country,
             });
           }}
           onClear={() => {
@@ -670,10 +672,11 @@ export const PhilippineAddressSelector: React.FC<PhilippineAddressSelectorProps>
             errorText={barangaysError}
             variant={variant}
             onSelect={(val, opt) => {
-              setLastSelectedBarangay(val);
+              const upVal = val.toUpperCase();
+              setLastSelectedBarangay(upVal);
               emitChange({
-                barangay: val,
-                country: opt?.path || matchedProvince ? 'Philippines' : country,
+                barangay: upVal,
+                country: opt?.path || matchedProvince ? 'PHILIPPINES' : country,
               });
             }}
             onClear={() => {
@@ -690,9 +693,9 @@ export const PhilippineAddressSelector: React.FC<PhilippineAddressSelectorProps>
             <label className="block text-[12px] font-medium text-slate-800 mb-1">Country</label>
             <input
               type="text"
-              placeholder="Philippines"
-              value={country || (matchedProvince ? 'Philippines' : '')}
-              onChange={(e) => emitChange({ country: e.target.value })}
+              placeholder="PHILIPPINES"
+              value={country || (matchedProvince ? 'PHILIPPINES' : '')}
+              onChange={(e) => emitChange({ country: e.target.value.toUpperCase() })}
               className={`${inputClass} uppercase`}
             />
           </div>
@@ -709,7 +712,7 @@ export const PhilippineAddressSelector: React.FC<PhilippineAddressSelectorProps>
             {...streetInputProps}
             placeholder={streetPlaceholder}
             value={street}
-            onChange={(e) => emitChange({ street: e.target.value })}
+            onChange={(e) => emitChange({ street: e.target.value.toUpperCase() })}
             className={`${inputClass} uppercase`}
           />
         </div>
@@ -784,7 +787,7 @@ export function formatComposedPhilippineAddress(
   if (includeCountry && parts.country.trim() && (parts.province.trim() || parts.cityMunicipality.trim())) {
     segments.push(parts.country.trim());
   }
-  return segments.join(', ');
+  return segments.join(', ').toUpperCase();
 }
 
 /**
@@ -813,7 +816,7 @@ export function parseComposedPhilippineAddress(
 
   let country = '';
   if (rawParts.length >= 2 && /^philippines$/i.test(rawParts[rawParts.length - 1])) {
-    country = rawParts.pop() || 'Philippines';
+    country = (rawParts.pop() || 'PHILIPPINES').toUpperCase();
   }
 
   const cachedProvinces = getCachedPhilatlasProvinces() || [];
@@ -821,7 +824,7 @@ export function parseComposedPhilippineAddress(
     const norm = normalizePhilatlasKey(candidate);
     if (!norm || cachedProvinces.length === 0) return null;
     const hit = cachedProvinces.find((p) => normalizePhilatlasKey(p.name) === norm);
-    return hit ? hit.name : null;
+    return hit ? hit.name.toUpperCase() : null;
   };
 
   if (!hasBarangay) {
@@ -833,20 +836,20 @@ export function parseComposedPhilippineAddress(
           cityMunicipality: '',
           barangay: '',
           street: '',
-          country: country || 'Philippines',
+          country: country || 'PHILIPPINES',
         };
       }
       return {
-        cityMunicipality: rawParts[0],
+        cityMunicipality: rawParts[0].toUpperCase(),
         province: '',
         barangay: '',
         street: '',
         country,
       };
     }
-    const prov = rawParts.pop() || '';
-    const city = rawParts.pop() || '';
-    const street = rawParts.join(', ');
+    const prov = (rawParts.pop() || '').toUpperCase();
+    const city = (rawParts.pop() || '').toUpperCase();
+    const street = rawParts.join(', ').toUpperCase();
     return {
       province: prov,
       cityMunicipality: city,
@@ -864,30 +867,30 @@ export function parseComposedPhilippineAddress(
         cityMunicipality: '',
         barangay: '',
         street: '',
-        country: country || 'Philippines',
+        country: country || 'PHILIPPINES',
       };
     }
     return {
       province: '',
       cityMunicipality: '',
-      barangay: rawParts[0],
+      barangay: rawParts[0].toUpperCase(),
       street: '',
       country,
     };
   }
   if (rawParts.length === 2) {
     return {
-      cityMunicipality: rawParts[0],
-      province: rawParts[1],
+      cityMunicipality: rawParts[0].toUpperCase(),
+      province: rawParts[1].toUpperCase(),
       barangay: '',
       street: '',
       country,
     };
   }
-  const prov = rawParts.pop() || '';
-  const city = rawParts.pop() || '';
-  const brgy = rawParts.pop() || '';
-  const street = rawParts.join(', ');
+  const prov = (rawParts.pop() || '').toUpperCase();
+  const city = (rawParts.pop() || '').toUpperCase();
+  const brgy = (rawParts.pop() || '').toUpperCase();
+  const street = rawParts.join(', ').toUpperCase();
   return {
     province: prov,
     cityMunicipality: city,
@@ -999,10 +1002,10 @@ export const ColbStreetBarangayAddressInput: React.FC<ColbStreetBarangayAddressI
     if (autoCountrySyncedRef.current === syncKey) return;
     autoCountrySyncedRef.current = syncKey;
     onChange({
-      province,
-      cityMunicipality,
-      streetLine,
-      country: 'Philippines',
+      province: province.toUpperCase(),
+      cityMunicipality: cityMunicipality.toUpperCase(),
+      streetLine: streetLine.toUpperCase(),
+      country: 'PHILIPPINES',
     });
   }, [matchedProvince, country, province, cityMunicipality, streetLine, onChange]);
 
@@ -1188,10 +1191,10 @@ export const ColbStreetBarangayAddressInput: React.FC<ColbStreetBarangayAddressI
           placeholder={streetPlaceholder}
           value={streetPrefixDraft}
           onChange={(e) => {
-            const nextPrefix = e.target.value;
+            const nextPrefix = e.target.value.toUpperCase();
             setStreetPrefixDraft(nextPrefix);
             const composed = currentBarangay
-              ? [nextPrefix.trimEnd(), currentBarangay].filter((s) => s.trim().length > 0).join(', ')
+              ? [nextPrefix.trimEnd(), currentBarangay].filter((s) => s.trim().length > 0).join(', ').toUpperCase()
               : nextPrefix;
             lastEmittedStreetLineRef.current = composed;
             onChange({
@@ -1217,13 +1220,14 @@ export const ColbStreetBarangayAddressInput: React.FC<ColbStreetBarangayAddressI
           errorText={provincesError}
           variant="colb"
           onSelect={(val, opt) => {
-            const changed = normalizePhilatlasKey(val) !== normalizePhilatlasKey(province);
+            const upVal = val.toUpperCase();
+            const changed = normalizePhilatlasKey(upVal) !== normalizePhilatlasKey(province);
             if (changed) setLastSelectedBarangay('');
             onChange({
-              province: val,
+              province: upVal,
               cityMunicipality: changed ? '' : cityMunicipality,
               streetLine: changed ? streetPrefix : streetLine,
-              country: opt?.path ? 'Philippines' : country,
+              country: opt?.path ? 'PHILIPPINES' : country,
             });
           }}
           onClear={() => {
@@ -1250,13 +1254,14 @@ export const ColbStreetBarangayAddressInput: React.FC<ColbStreetBarangayAddressI
           errorText={municipalitiesError}
           variant="colb"
           onSelect={(val, opt) => {
-            const changed = normalizePhilatlasKey(val) !== normalizePhilatlasKey(cityMunicipality);
+            const upVal = val.toUpperCase();
+            const changed = normalizePhilatlasKey(upVal) !== normalizePhilatlasKey(cityMunicipality);
             if (changed) setLastSelectedBarangay('');
             onChange({
               province,
-              cityMunicipality: val,
+              cityMunicipality: upVal,
               streetLine: changed ? streetPrefix : streetLine,
-              country: opt?.path || matchedProvince ? 'Philippines' : country,
+              country: opt?.path || matchedProvince ? 'PHILIPPINES' : country,
             });
           }}
           onClear={() => {
@@ -1282,14 +1287,15 @@ export const ColbStreetBarangayAddressInput: React.FC<ColbStreetBarangayAddressI
           errorText={barangaysError}
           variant="colb"
           onSelect={(val, opt) => {
-            setLastSelectedBarangay(val);
-            const cleanPrefix = streetPrefix.trim();
-            const composed = cleanPrefix ? `${cleanPrefix}, ${val}` : val;
+            const upVal = val.toUpperCase();
+            setLastSelectedBarangay(upVal);
+            const cleanPrefix = streetPrefix.trim().toUpperCase();
+            const composed = cleanPrefix ? `${cleanPrefix}, ${upVal}` : upVal;
             onChange({
               province,
               cityMunicipality,
               streetLine: composed,
-              country: opt?.path || matchedProvince ? 'Philippines' : country,
+              country: opt?.path || matchedProvince ? 'PHILIPPINES' : country,
             });
           }}
           onClear={() => {
@@ -1308,14 +1314,14 @@ export const ColbStreetBarangayAddressInput: React.FC<ColbStreetBarangayAddressI
             <label className="block text-[12px] font-medium text-slate-800 mb-1">Country</label>
             <input
               type="text"
-              placeholder="Philippines"
-              value={country || (matchedProvince ? 'Philippines' : '')}
+              placeholder="PHILIPPINES"
+              value={country || (matchedProvince ? 'PHILIPPINES' : '')}
               onChange={(e) =>
                 onChange({
                   province,
                   cityMunicipality,
                   streetLine,
-                  country: e.target.value,
+                  country: e.target.value.toUpperCase(),
                 })
               }
               className={`${colbInputClass} uppercase`}

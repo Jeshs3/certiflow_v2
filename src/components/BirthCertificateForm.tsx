@@ -7,7 +7,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BirthCertificateData, ColbDetails } from '../types/certificate';
 import {
   formatName,
-  formatDateMMMMddYYYY,
+  formatDateMMMMCommaDDYYYY,
+  normalizeNotApplicable,
+  toFullMonthName,
   toIsoDateInput,
   fromMonthDayYearToIso,
   parseIsoDateToColbParts,
@@ -64,7 +66,7 @@ const getSteps = () => [
 const TOTAL_STEPS = 6;
 
 const inputBaseClass =
-  'px-3 py-2 text-sm text-slate-900 bg-white border border-[#348e38] rounded-lg focus:outline-none focus:border-[#1f6123] focus:ring-2 focus:ring-[#348e38]/20 transition-colors placeholder:text-slate-400';
+  'px-3 py-2 text-sm text-slate-900 bg-white border border-[#348e38] rounded-lg focus:outline-none focus:border-[#1f6123] focus:ring-2 focus:ring-[#348e38]/20 transition-colors placeholder:text-slate-400 uppercase';
 
 const inputClass = `w-full ${inputBaseClass}`;
 
@@ -80,7 +82,7 @@ const shortcutBtnClass =
   'inline-flex items-center gap-1 text-[11px] font-semibold text-[#246b27] bg-emerald-50 hover:bg-emerald-100 border border-[#348e38]/30 px-2 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer';
 
 function formatReadableDateFromIso(dateStr?: string): string {
-  return formatDateMMMMddYYYY(dateStr);
+  return formatDateMMMMCommaDDYYYY(dateStr);
 }
 
 export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
@@ -209,15 +211,19 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
 
     return {
       ...nextColb,
-      paternityFatherName: fName,
-      paternityMotherName: mName,
-      paternityChildName: cName,
-      paternityBirthDate: formatDateMMMMddYYYY(nextChild.dateOfBirth),
-      paternityBirthPlace: birthPlace,
+      paternityFatherName: fName.toUpperCase(),
+      paternityMotherName: mName.toUpperCase(),
+      paternityChildName: cName.toUpperCase(),
+      paternityBirthDate: formatDateMMMMCommaDDYYYY(nextChild.dateOfBirth),
+      paternityBirthPlace: birthPlace.toUpperCase(),
     };
   };
 
-  const updateChild = (field: keyof typeof child, val: string) => {
+  const updateChild = (field: keyof typeof child, rawVal: string) => {
+    const val =
+      field === 'sex' || field === 'dateOfBirth'
+        ? rawVal
+        : normalizeNotApplicable(rawVal).toUpperCase();
     const updated = { ...child, [field]: val };
     const nextAdditional = { ...additional };
     let nextColb = { ...currentColb };
@@ -245,6 +251,24 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
     onChange({ ...data, child: updated, additional: nextAdditional, colb: nextColb });
   };
 
+  const formatColbParentsMarriageDate = (
+    month?: string,
+    day?: string,
+    year?: string
+  ): string => {
+    const iso = fromMonthDayYearToIso(month, day, year);
+    if (iso) return formatDateMMMMCommaDDYYYY(iso);
+    const cleanMonth = toFullMonthName(month);
+    const cleanDay = (day || '').trim();
+    const cleanYear = (year || '').trim();
+    if (!cleanMonth && !cleanDay && !cleanYear) return '';
+    return `${[cleanMonth, cleanDay].filter(Boolean).join(' ')}${
+      cleanYear ? `${cleanMonth || cleanDay ? ', ' : ''}${cleanYear}` : ''
+    }`
+      .trim()
+      .toUpperCase();
+  };
+
   const syncItem20ToDelayedItem4 = (nextColb: ColbDetails, fatherFull: string): ColbDetails => {
     const isMarried =
       nextColb.parentsMarried !== false && !nextColb.parentsMarriageDatePlace?.includes('NOT MARRIED');
@@ -253,14 +277,11 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
       delayedParentsStatus: isMarried ? 'married' : 'not_married',
     };
     if (isMarried) {
-      const dateStr = [
+      const dateStr = formatColbParentsMarriageDate(
         nextColb.parentsMarriageDateMonth,
         nextColb.parentsMarriageDateDay,
-        nextColb.parentsMarriageDateYear,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+        nextColb.parentsMarriageDateYear
+      );
       const placeStr = [
         nextColb.parentsMarriagePlaceCity,
         nextColb.parentsMarriagePlaceProvince,
@@ -268,23 +289,39 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
       ]
         .filter(Boolean)
         .join(', ')
-        .trim();
+        .trim()
+        .toUpperCase();
       if (dateStr || placeStr) {
-        updated.delayedParentsMarriageDatePlace = [dateStr, placeStr].filter(Boolean).join(' at ');
+        updated.delayedParentsMarriageDatePlace = [dateStr, placeStr].filter(Boolean).join(' AT ');
       } else if (
         nextColb.parentsMarriageDatePlace &&
         !nextColb.parentsMarriageDatePlace.includes('NOT MARRIED')
       ) {
-        updated.delayedParentsMarriageDatePlace = nextColb.parentsMarriageDatePlace;
+        updated.delayedParentsMarriageDatePlace = nextColb.parentsMarriageDatePlace.toUpperCase();
       }
     } else {
-      updated.delayedFatherName = fatherFull || nextColb.paternityFatherName || updated.delayedFatherName || '';
+      updated.delayedFatherName = (fatherFull || nextColb.paternityFatherName || updated.delayedFatherName || '').toUpperCase();
       updated.delayedAcknowledged = true;
     }
     return updated;
   };
 
-  const updateColb = (field: keyof ColbDetails, val: unknown) => {
+  const COLB_PRESERVE_CASE_FIELDS = new Set<keyof ColbDetails>([
+    'attendantType',
+    'attendantTimeAmPm',
+    'multipleBirthOrder',
+    'delayedApplicantType',
+    'delayedAffiantCivilStatus',
+    'delayedParentsStatus',
+  ]);
+
+  const updateColb = (field: keyof ColbDetails, rawVal: unknown) => {
+    const val =
+      typeof rawVal === 'string'
+        ? COLB_PRESERVE_CASE_FIELDS.has(field)
+          ? rawVal
+          : normalizeNotApplicable(rawVal).toUpperCase()
+        : rawVal;
     let nextColb: ColbDetails = { ...currentColb, [field]: val };
     if (String(field).startsWith('delayed') && field !== 'delayedParentsStatus' && val) {
       nextColb.affidavitDelayedRegEnabled = true;
@@ -337,16 +374,11 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
         field === 'parentsMarriagePlaceProvince' ||
         field === 'parentsMarriagePlaceCountry'
       ) {
-        const dPart = [
+        const dPart = formatColbParentsMarriageDate(
           nextColb.parentsMarriageDateMonth,
-          nextColb.parentsMarriageDateDay
-            ? `${nextColb.parentsMarriageDateDay}${nextColb.parentsMarriageDateYear ? ',' : ''}`
-            : '',
-          nextColb.parentsMarriageDateYear,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .trim();
+          nextColb.parentsMarriageDateDay,
+          nextColb.parentsMarriageDateYear
+        );
         const pPart = [
           nextColb.parentsMarriagePlaceCity,
           nextColb.parentsMarriagePlaceProvince,
@@ -354,7 +386,8 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
         ]
           .filter(Boolean)
           .join(', ')
-          .trim();
+          .trim()
+          .toUpperCase();
         if (nextColb.parentsMarried !== false) {
           nextColb.parentsMarriageDatePlace = [dPart, pPart].filter(Boolean).join(' - ');
         }
@@ -363,17 +396,24 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
         const dateStr = dashIdx >= 0 ? val.slice(0, dashIdx).trim() : val.split('-')[0]?.trim() || '';
         const placeStr = dashIdx >= 0 ? val.slice(dashIdx + 3).trim() : val.includes('-') ? val.split('-').slice(1).join('-').trim() : '';
         if (dateStr) {
-          const commaSplit = dateStr.split(',');
-          const md = commaSplit[0]?.trim().split(/\s+/) || [];
-          nextColb.parentsMarriageDateMonth = md[0] || '';
-          nextColb.parentsMarriageDateDay = md[1] || '';
-          nextColb.parentsMarriageDateYear = commaSplit[1]?.trim() || '';
+          const parsed = parseIsoDateToColbParts(dateStr);
+          if (parsed) {
+            nextColb.parentsMarriageDateMonth = parsed.monthName;
+            nextColb.parentsMarriageDateDay = parsed.dayPadded;
+            nextColb.parentsMarriageDateYear = parsed.year;
+          } else {
+            const commaSplit = dateStr.split(',');
+            const md = commaSplit[0]?.trim().split(/\s+/) || [];
+            nextColb.parentsMarriageDateMonth = (md[0] || '').toUpperCase();
+            nextColb.parentsMarriageDateDay = md[1] || '';
+            nextColb.parentsMarriageDateYear = commaSplit[1]?.trim() || '';
+          }
         }
         if (placeStr) {
-          const locs = placeStr.split(',').map((s) => s.trim()).filter(Boolean);
+          const locs = placeStr.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
           nextColb.parentsMarriagePlaceCity = locs[0] || '';
           nextColb.parentsMarriagePlaceProvince = locs[1] || '';
-          nextColb.parentsMarriagePlaceCountry = locs[2] || (locs.length > 0 ? 'Philippines' : '');
+          nextColb.parentsMarriagePlaceCountry = locs[2] || (locs.length > 0 ? 'PHILIPPINES' : '');
         }
       }
       const fatherFull =
@@ -399,7 +439,10 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
     });
   };
 
-  const updateMotherNames = (first: string, mid: string, last: string) => {
+  const updateMotherNames = (rawFirst: string, rawMid: string, rawLast: string) => {
+    const first = normalizeNotApplicable(rawFirst).toUpperCase();
+    const mid = normalizeNotApplicable(rawMid).toUpperCase();
+    const last = normalizeNotApplicable(rawLast).toUpperCase();
     const full = formatName(first, mid, last);
     const nextMother = { ...mother, fullName: full };
     const nextColb = syncPage1ToPaternity(child, nextMother, father, {
@@ -415,7 +458,10 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
     });
   };
 
-  const updateFatherNames = (first: string, mid: string, last: string) => {
+  const updateFatherNames = (rawFirst: string, rawMid: string, rawLast: string) => {
+    const first = normalizeNotApplicable(rawFirst).toUpperCase();
+    const mid = normalizeNotApplicable(rawMid).toUpperCase();
+    const last = normalizeNotApplicable(rawLast).toUpperCase();
     const full = formatName(first, mid, last);
     const nextFather = { ...father, fullName: full };
     let nextColb: ColbDetails = {
@@ -461,20 +507,15 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
   };
 
   const copyChildBirthplaceToParentsMarriagePlace = () => {
-    const city = child.cityMunicipality || currentColb.cityMunicipality || '';
-    const prov = child.provinceState || currentColb.province || '';
-    const country = child.country || '';
-    const dPart = [
+    const city = (child.cityMunicipality || currentColb.cityMunicipality || '').toUpperCase();
+    const prov = (child.provinceState || currentColb.province || '').toUpperCase();
+    const country = (child.country || '').toUpperCase();
+    const dPart = formatColbParentsMarriageDate(
       currentColb.parentsMarriageDateMonth,
-      currentColb.parentsMarriageDateDay
-        ? `${currentColb.parentsMarriageDateDay}${currentColb.parentsMarriageDateYear ? ',' : ''}`
-        : '',
-      currentColb.parentsMarriageDateYear,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-    const pPart = [city, prov, country].filter(Boolean).join(', ');
+      currentColb.parentsMarriageDateDay,
+      currentColb.parentsMarriageDateYear
+    );
+    const pPart = [city, prov, country].filter(Boolean).join(', ').toUpperCase();
     const nextColb = syncItem20ToDelayedItem4(
       {
         ...currentColb,
@@ -491,7 +532,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
 
   const copyParentToInformant = (role: 'father' | 'mother') => {
     const name =
-      role === 'father'
+      (role === 'father'
         ? formatName(
             currentColb.fatherFirstName || '',
             currentColb.fatherMiddleName || '',
@@ -501,8 +542,9 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
             currentColb.motherFirstName || '',
             currentColb.motherMiddleName || '',
             currentColb.motherLastName || ''
-          ) || mother.fullName;
-    const addr =
+          ) || mother.fullName
+      ).toUpperCase();
+    const addr = (
       role === 'father'
         ? [
             currentColb.fatherResidenceStreet || currentColb.motherResidenceStreet,
@@ -517,13 +559,14 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
             currentColb.motherResidenceProvince || child.provinceState,
           ]
             .filter(Boolean)
-            .join(', ');
+            .join(', ')
+    ).toUpperCase();
     onChange({
       ...data,
       colb: {
         ...currentColb,
         informantSignatureName: name,
-        informantRelationship: role === 'father' ? 'Father' : 'Mother',
+        informantRelationship: role === 'father' ? 'FATHER' : 'MOTHER',
         informantAddress: addr,
       },
     });
@@ -543,25 +586,27 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
 
   const autofillPaternityFromPage1 = () => {
     const fName =
-      formatName(
+      (formatName(
         currentColb.fatherFirstName || '',
         currentColb.fatherMiddleName || '',
         currentColb.fatherLastName || ''
-      ) || father.fullName;
+      ) || father.fullName).toUpperCase();
     const mName =
-      formatName(
+      (formatName(
         currentColb.motherFirstName || '',
         currentColb.motherMiddleName || '',
         currentColb.motherLastName || ''
-      ) || mother.fullName;
+      ) || mother.fullName).toUpperCase();
     const cName =
-      formatName(child.firstName, child.middleName, child.lastName) || child.fullName;
+      (formatName(child.firstName, child.middleName, child.lastName) || child.fullName).toUpperCase();
     const birthPlace = [child.placeOfBirth, child.cityMunicipality, child.provinceState]
       .filter(Boolean)
-      .join(', ');
+      .join(', ')
+      .toUpperCase();
     const lcrPlace = [child.cityMunicipality || currentColb.cityMunicipality, child.provinceState || currentColb.province]
       .filter(Boolean)
-      .join(', ');
+      .join(', ')
+      .toUpperCase();
     onChange({
       ...data,
       colb: {
@@ -572,62 +617,65 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
         paternityChildName: cName,
         paternityBirthDate: formatReadableDateFromIso(child.dateOfBirth),
         paternityBirthPlace: birthPlace,
-        paternitySwornPlace: currentColb.paternitySwornPlace || lcrPlace,
+        paternitySwornPlace: (currentColb.paternitySwornPlace || lcrPlace).toUpperCase(),
         affidavitPaternityAdminOfficer:
-          currentColb.affidavitPaternityAdminOfficer || currentColb.registeredByName || currentColb.receivedByName || '',
+          (currentColb.affidavitPaternityAdminOfficer || currentColb.registeredByName || currentColb.receivedByName || '').toUpperCase(),
         paternityAdminOfficerTitle:
-          currentColb.paternityAdminOfficerTitle || currentColb.registeredByTitle || 'Municipal Civil Registrar',
+          (currentColb.paternityAdminOfficerTitle || currentColb.registeredByTitle || 'MUNICIPAL CIVIL REGISTRAR').toUpperCase(),
       },
     });
   };
 
   const autofillDelayedFromPage1 = () => {
     const fName =
-      formatName(
+      (formatName(
         currentColb.fatherFirstName || '',
         currentColb.fatherMiddleName || '',
         currentColb.fatherLastName || ''
-      ) || father.fullName;
+      ) || father.fullName).toUpperCase();
     const mName =
-      formatName(
+      (formatName(
         currentColb.motherFirstName || '',
         currentColb.motherMiddleName || '',
         currentColb.motherLastName || ''
-      ) || mother.fullName;
+      ) || mother.fullName).toUpperCase();
     const cName =
-      formatName(child.firstName, child.middleName, child.lastName) || child.fullName;
+      (formatName(child.firstName, child.middleName, child.lastName) || child.fullName).toUpperCase();
     const affiantAddr = [
       currentColb.motherResidenceStreet,
       currentColb.motherResidenceCity || child.cityMunicipality,
       currentColb.motherResidenceProvince || child.provinceState,
     ]
       .filter(Boolean)
-      .join(', ');
+      .join(', ')
+      .toUpperCase();
     const birthPlace = [child.placeOfBirth, child.cityMunicipality, child.provinceState]
       .filter(Boolean)
-      .join(', ');
+      .join(', ')
+      .toUpperCase();
     const lcrPlace = [child.cityMunicipality || currentColb.cityMunicipality, child.provinceState || currentColb.province]
       .filter(Boolean)
-      .join(', ');
+      .join(', ')
+      .toUpperCase();
     const synced = syncItem20ToDelayedItem4(
       {
         ...currentColb,
         affidavitDelayedRegEnabled: true,
-        delayedAffiantName: currentColb.delayedAffiantName || fName || mName || '',
-        delayedAffiantResidence: currentColb.delayedAffiantResidence || affiantAddr,
+        delayedAffiantName: (currentColb.delayedAffiantName || fName || mName || '').toUpperCase(),
+        delayedAffiantResidence: (currentColb.delayedAffiantResidence || affiantAddr).toUpperCase(),
         delayedChildName: cName,
         delayedApplicantPlace: birthPlace,
         delayedApplicantDate: formatReadableDateFromIso(child.dateOfBirth),
-        delayedAttendantName: currentColb.delayedAttendantName || currentColb.attendantSignatureName || '',
-        delayedAttendantAddress: currentColb.delayedAttendantAddress || currentColb.attendantAddress || '',
-        delayedCitizenship: currentColb.delayedCitizenship || currentColb.motherCitizenship || 'Filipino',
+        delayedAttendantName: (currentColb.delayedAttendantName || currentColb.attendantSignatureName || '').toUpperCase(),
+        delayedAttendantAddress: (currentColb.delayedAttendantAddress || currentColb.attendantAddress || '').toUpperCase(),
+        delayedCitizenship: (currentColb.delayedCitizenship || currentColb.motherCitizenship || 'FILIPINO').toUpperCase(),
         delayedAffiantRelationship:
-          currentColb.delayedAffiantRelationship || (fName ? 'Father' : mName ? 'Mother' : ''),
-        delayedSwornPlace: currentColb.delayedSwornPlace || lcrPlace,
+          (currentColb.delayedAffiantRelationship || (fName ? 'FATHER' : mName ? 'MOTHER' : '')).toUpperCase(),
+        delayedSwornPlace: (currentColb.delayedSwornPlace || lcrPlace).toUpperCase(),
         delayedAdminOfficerName:
-          currentColb.delayedAdminOfficerName || currentColb.registeredByName || currentColb.receivedByName || '',
+          (currentColb.delayedAdminOfficerName || currentColb.registeredByName || currentColb.receivedByName || '').toUpperCase(),
         delayedAdminOfficerTitle:
-          currentColb.delayedAdminOfficerTitle || currentColb.registeredByTitle || 'Municipal Civil Registrar',
+          (currentColb.delayedAdminOfficerTitle || currentColb.registeredByTitle || 'MUNICIPAL CIVIL REGISTRAR').toUpperCase(),
       },
       fName
     );
@@ -927,7 +975,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   rows: [
                     ['1. Child Name', formatName(child.firstName, child.middleName, child.lastName) || child.fullName],
                     ['2. Sex', child.sex],
-                    ['3. Date of Birth', child.dateOfBirth],
+                    ['3. Date of Birth', formatDateMMMMCommaDDYYYY(child.dateOfBirth)],
                     [
                       'Time of Birth',
                       currentColb.attendantTime
@@ -1016,15 +1064,13 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     [
                       '20. Marriage of Parents',
                       currentColb.parentsMarried === false
-                        ? 'Not Married'
+                        ? 'NOT MARRIED'
                         : [
-                            [
+                            formatColbParentsMarriageDate(
                               currentColb.parentsMarriageDateMonth,
                               currentColb.parentsMarriageDateDay,
-                              currentColb.parentsMarriageDateYear,
-                            ]
-                              .filter(Boolean)
-                              .join(' '),
+                              currentColb.parentsMarriageDateYear
+                            ),
                             [
                               currentColb.parentsMarriagePlaceCity,
                               currentColb.parentsMarriagePlaceProvince,
@@ -1043,7 +1089,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   rows: [
                     [
                       '21a. Attendant Type',
-                      ({ '1': 'Physician', '2': 'Nurse', '3': 'Midwife', '4': 'Hilot', '5': currentColb.attendantOtherSpecify || 'Others' } as Record<string, string>)[
+                      ({ '1': 'PHYSICIAN', '2': 'NURSE', '3': 'MIDWIFE', '4': 'HILOT', '5': currentColb.attendantOtherSpecify || 'OTHERS' } as Record<string, string>)[
                         currentColb.attendantType || ''
                       ] || '',
                     ],
@@ -1057,7 +1103,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                           : '',
                         currentColb.attendantSignatureName,
                         currentColb.attendantTitlePosition,
-                        formatDateMMMMddYYYY(currentColb.attendantDate),
+                        formatDateMMMMCommaDDYYYY(currentColb.attendantDate),
                       ]
                         .filter(Boolean)
                         .join(' · '),
@@ -1068,7 +1114,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                         currentColb.informantSignatureName,
                         currentColb.informantRelationship,
                         currentColb.informantAddress,
-                        formatDateMMMMddYYYY(currentColb.informantDate),
+                        formatDateMMMMCommaDDYYYY(currentColb.informantDate),
                       ]
                         .filter(Boolean)
                         .join(' · '),
@@ -1078,7 +1124,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       [
                         currentColb.preparedByName,
                         currentColb.preparedByTitle,
-                        formatDateMMMMddYYYY(currentColb.preparedByDate),
+                        formatDateMMMMCommaDDYYYY(currentColb.preparedByDate),
                       ]
                         .filter(Boolean)
                         .join(' · '),
@@ -1088,7 +1134,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       [
                         currentColb.receivedByName,
                         currentColb.receivedByTitle,
-                        formatDateMMMMddYYYY(currentColb.receivedByDate),
+                        formatDateMMMMCommaDDYYYY(currentColb.receivedByDate),
                       ]
                         .filter(Boolean)
                         .join(' · '),
@@ -1098,7 +1144,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       [
                         currentColb.registeredByName,
                         currentColb.registeredByTitle,
-                        formatDateMMMMddYYYY(currentColb.registeredByDate),
+                        formatDateMMMMCommaDDYYYY(currentColb.registeredByDate),
                       ]
                         .filter(Boolean)
                         .join(' · '),
@@ -1120,8 +1166,8 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                                   currentColb.affidavitPaternityAdminOfficer,
                                 ]
                                   .filter(Boolean)
-                                  .join(' · ') || 'Enabled'
-                              : 'Not Enabled',
+                                  .join(' · ') || 'ENABLED'
+                              : 'NOT ENABLED',
                           ],
                           [
                             'Delayed Registration',
@@ -1132,8 +1178,8 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                                   currentColb.delayedAdminOfficerName,
                                 ]
                                   .filter(Boolean)
-                                  .join(' · ') || 'Enabled'
-                              : 'Not Enabled',
+                                  .join(' · ') || 'ENABLED'
+                              : 'NOT ENABLED',
                           ],
                         ],
                       },
@@ -1154,8 +1200,8 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       <td className="py-2 px-4 text-slate-500 font-medium align-top">
                         {fieldLabel}
                       </td>
-                      <td className="py-2 px-4 text-slate-900 font-medium tabular-nums break-words">
-                        {fieldValue ? String(fieldValue) : <span className="text-slate-300">—</span>}
+                      <td className="py-2 px-4 text-slate-900 font-medium tabular-nums break-words uppercase">
+                        {fieldValue ? String(fieldValue).toUpperCase() : <span className="text-slate-300">—</span>}
                       </td>
                     </tr>
                   ))}
@@ -1839,7 +1885,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     const fallbackMarriage =
                       currentColb.parentsMarriageDatePlace?.includes('NOT MARRIED') ||
                       !currentColb.parentsMarriageDatePlace
-                        ? 'October 18, 2020 - Sagbayan, Bohol, Philippines'
+                        ? 'OCTOBER 18, 2020 - SAGBAYAN, BOHOL, PHILIPPINES'
                         : currentColb.parentsMarriageDatePlace;
                     const nextColb = syncItem20ToDelayedItem4(
                       {
@@ -1919,9 +1965,9 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     onChange={(e) => {
                       const parts = parseIsoDateToColbParts(e.target.value);
                       const nextMonth = parts ? parts.monthName : '';
-                      const nextDay = parts ? parts.day : '';
+                      const nextDay = parts ? parts.dayPadded : '';
                       const nextYear = parts ? parts.year : '';
-                      const dPart = parts ? `${parts.monthName} ${parts.day}, ${parts.year}` : '';
+                      const dPart = parts ? `${parts.monthName}, ${parts.dayPadded} ${parts.year}` : '';
                       const pPart = [
                         currentColb.parentsMarriagePlaceCity,
                         currentColb.parentsMarriagePlaceProvince,
@@ -1929,7 +1975,8 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       ]
                         .filter(Boolean)
                         .join(', ')
-                        .trim();
+                        .trim()
+                        .toUpperCase();
                       const fatherFull =
                         formatName(
                           currentColb.fatherFirstName || '',
@@ -1974,16 +2021,11 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     cityMunicipality={currentColb.parentsMarriagePlaceCity ?? ''}
                     country={currentColb.parentsMarriagePlaceCountry ?? ''}
                     onChange={(nextAddr) => {
-                      const dPart = [
+                      const dPart = formatColbParentsMarriageDate(
                         currentColb.parentsMarriageDateMonth,
-                        currentColb.parentsMarriageDateDay
-                          ? `${currentColb.parentsMarriageDateDay}${currentColb.parentsMarriageDateYear ? ',' : ''}`
-                          : '',
-                        currentColb.parentsMarriageDateYear,
-                      ]
-                        .filter(Boolean)
-                        .join(' ')
-                        .trim();
+                        currentColb.parentsMarriageDateDay,
+                        currentColb.parentsMarriageDateYear
+                      );
                       const pPart = [
                         nextAddr.cityMunicipality,
                         nextAddr.province,
@@ -1991,7 +2033,8 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       ]
                         .filter(Boolean)
                         .join(', ')
-                        .trim();
+                        .trim()
+                        .toUpperCase();
                       const fatherFull =
                         formatName(
                           currentColb.fatherFirstName || '',
@@ -2019,7 +2062,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   <input
                     type="text"
                     {...getFocusProps('parents.marriageDatePlace')}
-                    placeholder="e.g. October 18, 2020 - Sagbayan, Bohol, Philippines"
+                    placeholder="e.g. OCTOBER 18, 2020 - SAGBAYAN, BOHOL, PHILIPPINES"
                     value={currentColb.parentsMarriageDatePlace || ''}
                     onChange={(e) => updateColb('parentsMarriageDatePlace', e.target.value)}
                     className={inputClass}
@@ -2109,7 +2152,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   type="date"
                   {...getFocusProps('attendant.date')}
                   value={toIsoDateInput(currentColb.attendantDate)}
-                  onChange={(e) => updateColb('attendantDate', e.target.value)}
+                  onChange={(e) => updateColb('attendantDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                   className={inputClass}
                 />
               </div>
@@ -2222,7 +2265,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     type="date"
                     {...getFocusProps('informant.date')}
                     value={toIsoDateInput(currentColb.informantDate)}
-                    onChange={(e) => updateColb('informantDate', e.target.value)}
+                    onChange={(e) => updateColb('informantDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                     className={inputClass}
                   />
                 </div>
@@ -2264,7 +2307,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                   <input
                     type="date"
                     value={toIsoDateInput(currentColb.preparedByDate)}
-                    onChange={(e) => updateColb('preparedByDate', e.target.value)}
+                    onChange={(e) => updateColb('preparedByDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                     className={inputClass}
                   />
                 </div>
@@ -2304,7 +2347,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     type="date"
                     {...getFocusProps('registry.receivedByDate')}
                     value={toIsoDateInput(currentColb.receivedByDate)}
-                    onChange={(e) => updateColb('receivedByDate', e.target.value)}
+                    onChange={(e) => updateColb('receivedByDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                     className={inputClass}
                   />
                 </div>
@@ -2352,7 +2395,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                     type="date"
                     {...getFocusProps('registry.registeredByDate')}
                     value={toIsoDateInput(currentColb.registeredByDate)}
-                    onChange={(e) => updateColb('registeredByDate', e.target.value)}
+                    onChange={(e) => updateColb('registeredByDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                     className={inputClass}
                   />
                 </div>
@@ -2392,7 +2435,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
           ) || mother.fullName || '';
         const autoChildName =
           formatName(child.firstName, child.middleName, child.lastName) || child.fullName || '';
-        const autoBirthDate = formatDateMMMMddYYYY(child.dateOfBirth);
+        const autoBirthDate = formatDateMMMMCommaDDYYYY(child.dateOfBirth);
         const autoBirthPlace = [
           child.placeOfBirth || additional.hospitalFacility,
           child.cityMunicipality,
@@ -2512,7 +2555,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       <input
                         type="date"
                         value={toIsoDateInput(currentColb.paternityFatherCtcDate)}
-                        onChange={(e) => updateColb('paternityFatherCtcDate', e.target.value)}
+                        onChange={(e) => updateColb('paternityFatherCtcDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                         className={inputClass}
                       />
                     </div>
@@ -2571,7 +2614,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       <input
                         type="date"
                         value={toIsoDateInput(currentColb.paternityMotherCtcDate)}
-                        onChange={(e) => updateColb('paternityMotherCtcDate', e.target.value)}
+                        onChange={(e) => updateColb('paternityMotherCtcDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                         className={inputClass}
                       />
                     </div>
@@ -2780,10 +2823,9 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                 <div>
                   <label className={labelClass}>1. Birth Date (on)</label>
                   <input
-                    type="text"
-                    placeholder="e.g. June 12, 2021"
-                    value={currentColb.delayedApplicantDate || ''}
-                    onChange={(e) => updateColb('delayedApplicantDate', e.target.value)}
+                    type="date"
+                    value={toIsoDateInput(currentColb.delayedApplicantDate)}
+                    onChange={(e) => updateColb('delayedApplicantDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                     className={inputClass}
                   />
                 </div>
@@ -2949,7 +2991,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       <input
                         type="date"
                         value={toIsoDateInput(currentColb.delayedAffiantCtcDate)}
-                        onChange={(e) => updateColb('delayedAffiantCtcDate', e.target.value)}
+                        onChange={(e) => updateColb('delayedAffiantCtcDate', formatDateMMMMCommaDDYYYY(e.target.value))}
                         className={inputClass}
                       />
                     </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CertificateType, SavedDraft } from '../types/certificate';
-import { clearAllDrafts, deleteDraft, duplicateDraft, getSavedDrafts } from '../utils/certificateUtils';
+import { clearAllDrafts, deleteDraft, duplicateDraft, formatDateMMMMCommaDDYYYY, formatDateMMMMDDYYYY, getSavedDrafts } from '../utils/certificateUtils';
 import {
   Baby,
   Heart,
@@ -144,8 +144,8 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                       onClick={() => onLoadDraft(draft)}
                       className="hover:bg-slate-50/90 cursor-pointer transition-colors"
                     >
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {subjectName}
+                      <td className="py-3 px-4 font-semibold text-slate-900 uppercase">
+                        {subjectName.toUpperCase()}
                       </td>
                       <td className="py-3 px-4">
                         <span
@@ -156,8 +156,8 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                           {isBirth ? 'Birth Certificate' : 'Marriage Certificate'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                        {eventDate || '—'}
+                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap uppercase">
+                        {eventDate ? (isBirth ? formatDateMMMMCommaDDYYYY(eventDate) : formatDateMMMMDDYYYY(eventDate)) : '—'}
                       </td>
                       <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
                         {formatDraftDateTime(draft.createdAt)}

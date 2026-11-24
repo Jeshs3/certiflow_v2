@@ -272,6 +272,9 @@ export interface ComDetails {
   husbandMotherMaidenLastName?: string;
   husbandMotherCitizenship?: string;
   husbandConsentPerson?: string;
+  husbandConsentFirstName?: string;
+  husbandConsentMiddleName?: string;
+  husbandConsentLastName?: string;
   husbandConsentRelationship?: string;
   husbandConsentResidence?: string;
 
@@ -297,6 +300,9 @@ export interface ComDetails {
   wifeMotherMaidenLastName?: string;
   wifeMotherCitizenship?: string;
   wifeConsentPerson?: string;
+  wifeConsentFirstName?: string;
+  wifeConsentMiddleName?: string;
+  wifeConsentLastName?: string;
   wifeConsentRelationship?: string;
   wifeConsentResidence?: string;
 
@@ -312,6 +318,10 @@ export interface ComDetails {
   marriageTime?: string;
   marriageTimeAmPm?: 'am' | 'pm';
   marriageSettlement?: 'entered' | 'not_entered';
+  witnessWhereofDate?: string;
+  witnessWhereofDay?: string;
+  witnessWhereofMonth?: string;
+  witnessWhereofYear?: string;
   husbandSignature?: string;
   wifeSignature?: string;
 

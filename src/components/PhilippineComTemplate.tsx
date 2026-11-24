@@ -1,6 +1,12 @@
 import React from 'react';
 import { CertificateStyle, MarriageCertificateData } from '../types/certificate';
-import { ShieldAlert } from 'lucide-react';
+import {
+  formatDateMMMMDDYYYY,
+  fromMonthDayYearToIso,
+  normalizeNotApplicable,
+  parseIsoDateToColbParts,
+  toFullMonthName,
+} from '../utils/certificateUtils';
 
 interface PhilippineComTemplateProps {
   data: MarriageCertificateData;
@@ -17,7 +23,13 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
 }) => {
   const { groom, bride, marriage, additional, com } = data;
 
-  const val = (v?: string, fallback = '') => (blankMode ? '' : v || fallback);
+  const val = (v?: string, fallback = '') =>
+    blankMode ? '' : normalizeNotApplicable(v || fallback).toUpperCase();
+
+  const longMonths = [
+    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+  ];
 
   // Husband info
   const hFirst = val(com?.husbandFirstName || groom.firstName);
@@ -25,15 +37,14 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
   const hLast = val(com?.husbandLastName || groom.lastName);
 
   let hDay = com?.husbandDobDay || '';
-  let hMonth = com?.husbandDobMonth || '';
+  let hMonth = toFullMonthName(com?.husbandDobMonth);
   let hYear = com?.husbandDobYear || '';
   if (!hDay && groom.dateOfBirth) {
     const parts = groom.dateOfBirth.split('-');
     if (parts.length === 3) {
       hYear = parts[0];
       const monthNum = parseInt(parts[1], 10);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      hMonth = months[monthNum - 1] || parts[1];
+      hMonth = longMonths[monthNum - 1] || toFullMonthName(parts[1]);
       hDay = parts[2];
     }
   }
@@ -49,15 +60,14 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
   const wLast = val(com?.wifeLastName || bride.lastName);
 
   let wDay = com?.wifeDobDay || '';
-  let wMonth = com?.wifeDobMonth || '';
+  let wMonth = toFullMonthName(com?.wifeDobMonth);
   let wYear = com?.wifeDobYear || '';
   if (!wDay && bride.dateOfBirth) {
     const parts = bride.dateOfBirth.split('-');
     if (parts.length === 3) {
       wYear = parts[0];
       const monthNum = parseInt(parts[1], 10);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      wMonth = months[monthNum - 1] || parts[1];
+      wMonth = longMonths[monthNum - 1] || toFullMonthName(parts[1]);
       wDay = parts[2];
     }
   }
@@ -69,18 +79,14 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
 
   // Marriage date
   let mDay = com?.marriageDay || '';
-  let mMonth = com?.marriageMonth || '';
+  let mMonth = toFullMonthName(com?.marriageMonth);
   let mYear = com?.marriageYear || '';
   if (!mDay && marriage.dateOfMarriage) {
     const parts = marriage.dateOfMarriage.split('-');
     if (parts.length === 3) {
       mYear = parts[0];
       const monthNum = parseInt(parts[1], 10);
-      const months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-      ];
-      mMonth = months[monthNum - 1] || parts[1];
+      mMonth = longMonths[monthNum - 1] || toFullMonthName(parts[1]);
       mDay = parts[2];
     }
   }
@@ -88,6 +94,17 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
     mDay = '';
     mMonth = '';
     mYear = '';
+  }
+
+  // Witness Whereof signing date (independent from Date of Marriage)
+  const wWhereofParsed = parseIsoDateToColbParts(com?.witnessWhereofDate);
+  let wWhereofDay = com?.witnessWhereofDay || wWhereofParsed?.dayPadded || '';
+  let wWhereofMonth = toFullMonthName(com?.witnessWhereofMonth || wWhereofParsed?.monthName || '');
+  let wWhereofYear = com?.witnessWhereofYear || wWhereofParsed?.year || '';
+  if (blankMode) {
+    wWhereofDay = '';
+    wWhereofMonth = '';
+    wWhereofYear = '';
   }
 
   const parsePlaceParts = (raw?: string) => {
@@ -102,7 +119,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
       return { city: parts[0], province: parts[1], country: parts.slice(2).join(', ') };
     }
     if (parts.length === 2) {
-      return { city: parts[0], province: parts[1], country: 'Philippines' };
+      return { city: parts[0], province: parts[1], country: 'PHILIPPINES' };
     }
     return { city: parts[0] || '', province: '', country: '' };
   };
@@ -114,7 +131,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
     if (blankMode) {
       return { first: '', middle: '', last: '' };
     }
-    const trimmed = (raw || '').trim();
+    const trimmed = normalizeNotApplicable((raw || '').trim()).trim();
     if (!trimmed || trimmed.toUpperCase() === 'N/A') {
       return { first: '', middle: 'N/A', last: '' };
     }
@@ -132,17 +149,51 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
     };
   };
 
-  const hConsentName = parseConsentNameParts(com?.husbandConsentPerson);
-  const wConsentName = parseConsentNameParts(com?.wifeConsentPerson);
+  const resolveConsentNameParts = (
+    first?: string,
+    middle?: string,
+    last?: string,
+    legacyCombined?: string
+  ) => {
+    if (blankMode) {
+      return { first: '', middle: '', last: '' };
+    }
+    if (first !== undefined || middle !== undefined || last !== undefined) {
+      const f = normalizeNotApplicable((first || '').trim()).trim().toUpperCase();
+      const m = normalizeNotApplicable((middle || '').trim()).trim().toUpperCase();
+      const l = normalizeNotApplicable((last || '').trim()).trim().toUpperCase();
+      if (!f && !m && !l) {
+        return { first: '', middle: 'N/A', last: '' };
+      }
+      if (!f && !l && m === 'N/A') {
+        return { first: '', middle: 'N/A', last: '' };
+      }
+      return { first: f, middle: m, last: l };
+    }
+    return parseConsentNameParts(legacyCombined);
+  };
+
+  const hConsentName = resolveConsentNameParts(
+    com?.husbandConsentFirstName,
+    com?.husbandConsentMiddleName,
+    com?.husbandConsentLastName,
+    com?.husbandConsentPerson
+  );
+  const wConsentName = resolveConsentNameParts(
+    com?.wifeConsentFirstName,
+    com?.wifeConsentMiddleName,
+    com?.wifeConsentLastName,
+    com?.wifeConsentPerson
+  );
 
   const pv = (text?: string | null) => {
     if (blankMode || !text) return '\u00A0';
-    return <span data-print-value="true">{text}</span>;
+    return <span data-print-value="true">{normalizeNotApplicable(text).toUpperCase()}</span>;
   };
 
   const pvEmpty = (text?: string | null) => {
     if (blankMode || !text) return '';
-    return <span data-print-value="true">{text}</span>;
+    return <span data-print-value="true">{normalizeNotApplicable(text).toUpperCase()}</span>;
   };
 
   const CheckX: React.FC<{ checked: boolean; label?: string; black?: boolean; sizeCm?: boolean }> = ({ checked, label, black, sizeCm }) => (
@@ -496,7 +547,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                       style={{ width: '2.8cm' }}
                       className="inline-block border-b border-rose-700 text-center align-bottom truncate"
                     >
-                      {pvEmpty(showSolemnizing ? com?.solemnizingAffiantCtcDate : '')}
+                      {pvEmpty(showSolemnizing ? formatDateMMMMDDYYYY(com?.solemnizingAffiantCtcDate) : '')}
                     </span>{' '}
                     at{' '}
                     <span
@@ -556,9 +607,11 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
           {/* 3rd Slice (17 cm): AFFIDAVIT FOR DELAYED REGISTRATION OF MARRIAGE */}
           {(() => {
             const showDelayed = !blankMode && Boolean(com?.affidavitDelayedReg);
-            const delayedMarriageDateStr =
+            const delayedMarriageDateStr = formatDateMMMMDDYYYY(
               com?.delayedMarriageDate ||
-              (mMonth || mDay || mYear ? `${mMonth} ${mDay}, ${mYear}`.trim() : '');
+                marriage.dateOfMarriage ||
+                fromMonthDayYearToIso(mMonth, mDay, mYear)
+            );
             const delayedMarriagePlaceStr =
               com?.delayedMarriagePlace || marriage.placeOfMarriage || com?.placeOfMarriage || '';
             const defaultHusbandName = [hFirst, hLast].filter(Boolean).join(' ');
@@ -725,7 +778,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                               style={{ width: '3cm' }}
                               className="inline-block border-b border-rose-700 text-center truncate align-bottom"
                             >
-                              {pv(showDelayed ? com?.licenseIssuedDate : '')}
+                              {pv(showDelayed ? formatDateMMMMDDYYYY(com?.licenseIssuedDate) : '')}
                             </span>{' '}
                             at{' '}
                             <span
@@ -886,7 +939,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                     </span>
                     <span className="shrink-0 whitespace-nowrap">issued on</span>
                     <span className="flex-1 min-w-0 border-b border-rose-700 px-1 text-center leading-tight truncate">
-                      {pv(showDelayed ? com?.delayedAffiantCtcDate : '')}
+                      {pv(showDelayed ? formatDateMMMMDDYYYY(com?.delayedAffiantCtcDate) : '')}
                     </span>
                     <span className="shrink-0 whitespace-nowrap">at</span>
                     <span className="flex-[1.5] min-w-0 border-b border-rose-700 px-1 uppercase text-center leading-tight truncate">
@@ -1081,19 +1134,19 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
               <div className="pt-0 pb-0.5 px-0.5 flex flex-col justify-start gap-0">
                 <div className="flex items-baseline leading-tight gap-1">
                   <span className="text-[6pt] text-rose-800 whitespace-nowrap shrink-0 leading-none">(First)</span>
-                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black p-0 leading-tight truncate">
+                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black px-0 pt-0 pb-[1.5px] leading-tight truncate">
                     {pv(hFirst)}
                   </span>
                 </div>
                 <div className="flex items-baseline leading-tight gap-1">
                   <span className="text-[6pt] text-rose-800 whitespace-nowrap shrink-0 leading-none">(Middle)</span>
-                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black p-0 leading-tight truncate">
+                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black px-0 pt-0 pb-[1.5px] leading-tight truncate">
                     {pv(hMiddle)}
                   </span>
                 </div>
                 <div className="flex items-baseline leading-tight gap-1">
                   <span className="text-[6pt] text-rose-800 whitespace-nowrap shrink-0 leading-none">(Last)</span>
-                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black p-0 leading-tight truncate">
+                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black px-0 pt-0 pb-[1.5px] leading-tight truncate">
                     {pv(hLast)}
                   </span>
                 </div>
@@ -1110,19 +1163,19 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
               <div className="pt-0 pb-0.5 px-0.5 flex flex-col justify-start gap-0">
                 <div className="flex items-baseline leading-tight gap-1">
                   <span className="text-[6pt] text-rose-800 whitespace-nowrap shrink-0 leading-none">(First)</span>
-                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black p-0 leading-tight truncate">
+                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black px-0 pt-0 pb-[1.5px] leading-tight truncate">
                     {pv(wFirst)}
                   </span>
                 </div>
                 <div className="flex items-baseline leading-tight gap-1">
                   <span className="text-[6pt] text-rose-800 whitespace-nowrap shrink-0 leading-none">(Middle)</span>
-                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black p-0 leading-tight truncate">
+                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black px-0 pt-0 pb-[1.5px] leading-tight truncate">
                     {pv(wMiddle)}
                   </span>
                 </div>
                 <div className="flex items-baseline leading-tight gap-1">
                   <span className="text-[6pt] text-rose-800 whitespace-nowrap shrink-0 leading-none">(Last)</span>
-                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black p-0 leading-tight truncate">
+                  <span className="flex-1 border-b border-rose-800 font-bold uppercase text-[7.5pt] text-black px-0 pt-0 pb-[1.5px] leading-tight truncate">
                     {pv(wLast)}
                   </span>
                 </div>
@@ -1547,7 +1600,18 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                   17. Time of Marriage:
                 </span>
                 <span className="flex-1 min-w-0 border-b border-dotted border-rose-800 font-bold text-black text-center leading-tight min-h-[12px] truncate">
-                  {pvEmpty(val(marriage.timeOfMarriage || com?.marriageTime))}
+                  {pvEmpty(
+                    val(
+                      (() => {
+                        const raw = (com?.marriageTime || marriage.timeOfMarriage || '').trim();
+                        if (!raw) return '';
+                        if (/\b(am|pm)\b/i.test(raw)) return raw.toUpperCase();
+                        return com?.marriageTimeAmPm
+                          ? `${raw} ${com.marriageTimeAmPm.toUpperCase()}`
+                          : raw;
+                      })()
+                    )
+                  )}
                 </span>
                 <span className="text-[6pt] text-black shrink-0 whitespace-nowrap leading-tight">
                   am/pm
@@ -1569,14 +1633,14 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 THIS IS TO CERTIFY: That I,{' '}
                 <span
                   style={{ width: '5.5cm' }}
-                  className="inline-block border-b border-dotted border-rose-700 font-bold uppercase text-black text-center px-1 indent-0 truncate align-bottom"
+                  className="inline-block border-b border-dotted border-rose-700 font-bold uppercase text-black text-center px-1 pb-[1.5px] indent-0 truncate align-bottom"
                 >
                   {pv([hFirst, hMiddle, hLast].filter(Boolean).join(' '))}
                 </span>{' '}
                 and I,{' '}
                 <span
                   style={{ width: '5.5cm' }}
-                  className="inline-block border-b border-dotted border-rose-700 font-bold uppercase text-black text-center px-1 indent-0 truncate align-bottom"
+                  className="inline-block border-b border-dotted border-rose-700 font-bold uppercase text-black text-center px-1 pb-[1.5px] indent-0 truncate align-bottom"
                 >
                   {pv([wFirst, wMiddle, wLast].filter(Boolean).join(' '))}
                 </span>{' '}
@@ -1591,9 +1655,9 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 className="text-[7pt] leading-snug text-black mb-0"
               >
                 IN WITNESS WHEREOF, we have signed / marked with our fingerprint this certificate in quadruplicate this{' '}
-                <span className="inline-block min-w-[28px] border-b border-dotted border-rose-700 font-bold text-center text-black indent-0">{pv(mDay)}</span> day of{' '}
-                <span className="inline-block min-w-[72px] border-b border-dotted border-rose-700 font-bold text-center text-black indent-0">{pv(mMonth)}</span>,{' '}
-                <span className="inline-block min-w-[36px] border-b border-dotted border-rose-700 font-bold text-center text-black indent-0">{pv(mYear)}</span>.
+                <span className="inline-block min-w-[28px] border-b border-dotted border-rose-700 font-bold text-center text-black indent-0">{pv(wWhereofDay)}</span> day of{' '}
+                <span className="inline-block min-w-[72px] border-b border-dotted border-rose-700 font-bold text-center text-black indent-0">{pv(wWhereofMonth)}</span>,{' '}
+                <span className="inline-block min-w-[36px] border-b border-dotted border-rose-700 font-bold text-center text-black indent-0">{pv(wWhereofYear)}</span>.
               </p>
             </div>
 
@@ -1644,7 +1708,11 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                       style={{ width: '4cm' }}
                       className="inline-block border-b border-dotted border-rose-700 font-semibold text-black px-1 text-center truncate align-bottom"
                     >
-                      {pv((com?.licenseType || 'license') === 'license' ? val(com?.licenseIssuedDate) : '')}
+                      {pv(
+                        (com?.licenseType || 'license') === 'license'
+                          ? val(formatDateMMMMDDYYYY(com?.licenseIssuedDate))
+                          : ''
+                      )}
                     </span>{' '}
                     at{' '}
                     <span
@@ -1754,7 +1822,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 <div className="flex items-baseline gap-1">
                   <span className="w-16 shrink-0 font-helvetica text-black font-normal">Date</span>
                   <span style={{ borderBottomWidth: '0.5px' }} className="flex-1 min-w-0 border-b border-rose-800 font-normal font-helvetica text-black min-h-[12px] truncate">
-                    {pvEmpty(val(com?.receivedByDate))}
+                    {pvEmpty(val(formatDateMMMMDDYYYY(com?.receivedByDate)))}
                   </span>
                 </div>
               </div>
@@ -1784,7 +1852,7 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
                 <div className="flex items-baseline gap-1">
                   <span className="w-16 shrink-0">Date</span>
                   <span className="flex-1 min-w-0 border-b border-rose-800 font-helvetica text-black min-h-[12px] truncate">
-                    {pvEmpty(val(com?.registeredByDate))}
+                    {pvEmpty(val(formatDateMMMMDDYYYY(com?.registeredByDate)))}
                   </span>
                 </div>
               </div>
