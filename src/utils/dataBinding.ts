@@ -5,6 +5,7 @@
 
 import { BirthCertificateData } from '../types/certificate';
 import { DataBindingDefinition, DynamicBindingDataset } from '../types/dataBinding';
+import { toIsoDateInput } from './certificateUtils';
 
 function ensureColb(d: BirthCertificateData) {
   return (
@@ -845,7 +846,9 @@ export const COLB_DATA_BINDINGS: DataBindingDefinition[] = [
  */
 export function parseDateComponents(dateStr?: string) {
   if (!dateStr) return { day: '', month: '', monthName: '', year: '' };
-  const parts = dateStr.split('-');
+  const iso = toIsoDateInput(dateStr);
+  if (!iso) return { day: '', month: '', monthName: '', year: '' };
+  const parts = iso.split('-');
   if (parts.length !== 3) return { day: '', month: '', monthName: '', year: '' };
 
   const year = parts[0];

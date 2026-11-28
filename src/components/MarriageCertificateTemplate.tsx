@@ -2,7 +2,7 @@ import {
   CertificateStyle,
   MarriageCertificateData,
 } from '../types/certificate';
-import { calculateAge, formatDisplayDate } from '../utils/certificateUtils';
+import { calculateAge, formatDateMMMMDDYYYY } from '../utils/certificateUtils';
 import { Calendar, Heart, MapPin, ShieldAlert, Sparkles, User, Users } from 'lucide-react';
 import { PhilippineComTemplate } from './PhilippineComTemplate';
 
@@ -76,7 +76,7 @@ export const MarriageCertificateTemplate: React.FC<MarriageCertificateTemplatePr
     [bride.firstName, bride.middleName, bride.lastName].filter(Boolean).join(' ') ||
     'Name of Bride';
 
-  const formattedMarriageDate = formatDisplayDate(marriage.dateOfMarriage, style.dateFormat);
+  const formattedMarriageDate = formatDateMMMMDDYYYY(marriage.dateOfMarriage) || '—';
   const groomAge = calculateAge(groom.dateOfBirth, marriage.dateOfMarriage);
   const brideAge = calculateAge(bride.dateOfBirth, marriage.dateOfMarriage);
 
@@ -273,7 +273,7 @@ export const MarriageCertificateTemplate: React.FC<MarriageCertificateTemplatePr
                 <div>
                   <span className="text-slate-500">Date of Birth:</span>
                   <p className="font-medium text-slate-800">
-                    {formatDisplayDate(groom.dateOfBirth, style.dateFormat)}
+                    {formatDateMMMMDDYYYY(groom.dateOfBirth) || '—'}
                   </p>
                 </div>
                 <div>
@@ -303,7 +303,7 @@ export const MarriageCertificateTemplate: React.FC<MarriageCertificateTemplatePr
                 <div>
                   <span className="text-slate-500">Date of Birth:</span>
                   <p className="font-medium text-slate-800">
-                    {formatDisplayDate(bride.dateOfBirth, style.dateFormat)}
+                    {formatDateMMMMDDYYYY(bride.dateOfBirth) || '—'}
                   </p>
                 </div>
                 <div>
@@ -359,7 +359,7 @@ export const MarriageCertificateTemplate: React.FC<MarriageCertificateTemplatePr
             {/* Left Mock Verification */}
             <div className="flex flex-col items-center">
               <div className="w-24 sm:w-32 border-b border-slate-400 pb-1 text-[11px] sm:text-xs text-slate-700 font-mono">
-                {formatDisplayDate(additional.dateOfPreparation, style.dateFormat)}
+                {formatDateMMMMDDYYYY(additional.dateOfPreparation) || '—'}
               </div>
               <span className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">
                 Date Prepared (Sample)

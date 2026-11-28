@@ -258,10 +258,14 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
   ): string => {
     const iso = fromMonthDayYearToIso(month, day, year);
     if (iso) return formatDateMMMMCommaDDYYYY(iso);
-    const cleanMonth = toFullMonthName(month);
+    const trimmedMonth = (month || '').trim();
     const cleanDay = (day || '').trim();
     const cleanYear = (year || '').trim();
-    if (!cleanMonth && !cleanDay && !cleanYear) return '';
+    if (!trimmedMonth && !cleanDay && !cleanYear) return '';
+    if (!cleanDay && !cleanYear) {
+      return normalizeNotApplicable(trimmedMonth).toUpperCase();
+    }
+    const cleanMonth = toFullMonthName(trimmedMonth);
     return `${[cleanMonth, cleanDay].filter(Boolean).join(' ')}${
       cleanYear ? `${cleanMonth || cleanDay ? ', ' : ''}${cleanYear}` : ''
     }`
@@ -403,10 +407,16 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
             nextColb.parentsMarriageDateYear = parsed.year;
           } else {
             const commaSplit = dateStr.split(',');
-            const md = commaSplit[0]?.trim().split(/\s+/) || [];
-            nextColb.parentsMarriageDateMonth = (md[0] || '').toUpperCase();
-            nextColb.parentsMarriageDateDay = md[1] || '';
-            nextColb.parentsMarriageDateYear = commaSplit[1]?.trim() || '';
+            if (commaSplit.length > 1) {
+              const md = commaSplit[0]?.trim().split(/\s+/) || [];
+              nextColb.parentsMarriageDateMonth = (md[0] || '').toUpperCase();
+              nextColb.parentsMarriageDateDay = md[1] || '';
+              nextColb.parentsMarriageDateYear = commaSplit[1]?.trim() || '';
+            } else {
+              nextColb.parentsMarriageDateMonth = dateStr.toUpperCase();
+              nextColb.parentsMarriageDateDay = '';
+              nextColb.parentsMarriageDateYear = '';
+            }
           }
         }
         if (placeStr) {
@@ -1954,20 +1964,18 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
               <div className="space-y-3">
                 <div>
                   <label className={labelClass}>20a. Date of Marriage</label>
-                  <input
-                    type="date"
-                    {...getFocusProps('parents.marriageDateMonth')}
-                    value={fromMonthDayYearToIso(
-                      currentColb.parentsMarriageDateMonth,
-                      currentColb.parentsMarriageDateDay,
-                      currentColb.parentsMarriageDateYear
-                    )}
-                    onChange={(e) => {
-                      const parts = parseIsoDateToColbParts(e.target.value);
-                      const nextMonth = parts ? parts.monthName : '';
+                  {(() => {
+                    const commitParentsMarriageDate = (rawInput: string, fromPicker = false) => {
+                      const normalized = normalizeNotApplicable(rawInput).toUpperCase();
+                      const parts = parseIsoDateToColbParts(normalized);
+                      const nextMonth = parts ? parts.monthName : fromPicker ? '' : normalized;
                       const nextDay = parts ? parts.dayPadded : '';
                       const nextYear = parts ? parts.year : '';
-                      const dPart = parts ? `${parts.monthName}, ${parts.dayPadded} ${parts.year}` : '';
+                      const dPart = parts
+                        ? `${parts.monthName}, ${parts.dayPadded} ${parts.year}`
+                        : fromPicker
+                        ? ''
+                        : normalized.trim();
                       const pPart = [
                         currentColb.parentsMarriagePlaceCity,
                         currentColb.parentsMarriagePlaceProvince,
@@ -1995,9 +2003,60 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                         fatherFull
                       );
                       onChange({ ...data, colb: updatedColb });
-                    }}
-                    className={inputClass}
-                  />
+                    };
+
+                    const textDisplayValue =
+                      currentColb.parentsMarriageDateDay || currentColb.parentsMarriageDateYear
+                        ? formatColbParentsMarriageDate(
+                            currentColb.parentsMarriageDateMonth,
+                            currentColb.parentsMarriageDateDay,
+                            currentColb.parentsMarriageDateYear
+                          )
+                        : currentColb.parentsMarriageDateMonth || '';
+
+                    return (
+                      <div className="space-y-1.5">
+                        <div className="flex w-full items-center gap-2">
+                          <input
+                            type="text"
+                            {...getFocusProps('parents.marriageDateMonth')}
+                            value={textDisplayValue}
+                            onChange={(e) => commitParentsMarriageDate(e.target.value, false)}
+                            placeholder="OCTOBER, 18 2020 or Forgotten / Not Married / N/A"
+                            className={`${inputClass} !w-0 flex-1 min-w-0`}
+                          />
+                          <input
+                            type="date"
+                            aria-label="Pick parents date of marriage from calendar"
+                            title="Pick calendar date"
+                            value={fromMonthDayYearToIso(
+                              currentColb.parentsMarriageDateMonth,
+                              currentColb.parentsMarriageDateDay,
+                              currentColb.parentsMarriageDateYear
+                            )}
+                            onChange={(e) => commitParentsMarriageDate(e.target.value, true)}
+                            className={`${inputClass} !w-[132px] !shrink-0 cursor-pointer`}
+                          />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {[
+                            { label: 'Forgotten', value: 'FORGOTTEN' },
+                            { label: 'Not Married', value: 'NOT MARRIED' },
+                            { label: 'N/A', value: 'N/A' },
+                          ].map((preset) => (
+                            <button
+                              key={preset.value}
+                              type="button"
+                              onClick={() => commitParentsMarriageDate(preset.value, false)}
+                              className={shortcutBtnClass}
+                            >
+                              <span>{preset.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-1.5">
@@ -2876,7 +2935,7 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
 
                 {(currentColb.delayedParentsStatus ||
                   (currentColb.parentsMarried === false ? 'not_married' : 'married')) === 'married' ? (
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-2 space-y-1.5">
                     <label className={labelClass}>4a. Parents Married On &amp; At</label>
                     <input
                       type="text"
@@ -2890,6 +2949,21 @@ export const BirthCertificateForm: React.FC<BirthCertificateFormProps> = ({
                       onChange={(e) => updateColb('delayedParentsMarriageDatePlace', e.target.value)}
                       className={inputClass}
                     />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[
+                        { label: 'Forgotten', value: 'FORGOTTEN' },
+                        { label: 'N/A', value: 'N/A' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => updateColb('delayedParentsMarriageDatePlace', preset.value)}
+                          className={shortcutBtnClass}
+                        >
+                          <span>{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="sm:col-span-2">

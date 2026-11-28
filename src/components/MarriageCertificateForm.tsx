@@ -67,8 +67,9 @@ const LONG_MONTHS = [
 ];
 
 function parseIsoDateParts(dateStr: string) {
-  if (!dateStr) return { day: '', month: '', year: '' };
-  const parts = dateStr.split('-');
+  const iso = toIsoDateInput(dateStr);
+  if (!iso) return { day: '', month: '', year: '' };
+  const parts = iso.split('-');
   if (parts.length !== 3) return { day: '', month: '', year: '' };
   const year = parts[0];
   const monthIdx = parseInt(parts[1], 10) - 1;
@@ -78,10 +79,13 @@ function parseIsoDateParts(dateStr: string) {
 }
 
 function computeNumericAgeYears(birthDateStr: string, refDateStr?: string): string {
-  if (!birthDateStr) return '';
-  const birth = new Date(birthDateStr);
+  const birthIso = toIsoDateInput(birthDateStr);
+  if (!birthIso) return '';
+  const birth = new Date(birthIso);
   if (isNaN(birth.getTime())) return '';
-  const ref = refDateStr ? new Date(refDateStr) : new Date();
+  const refIso = refDateStr ? toIsoDateInput(refDateStr) : '';
+  if (refDateStr && !refIso) return '';
+  const ref = refIso ? new Date(refIso) : new Date();
   if (isNaN(ref.getTime()) || ref < birth) return '';
 
   let years = ref.getFullYear() - birth.getFullYear();
@@ -575,48 +579,27 @@ export const MarriageCertificateForm: React.FC<MarriageCertificateFormProps> = (
     };
 
     return (
-      // <div className="flex items-center gap-2">
-      //   <input
-      //     type="text"
-      //     value={timeDigits}
-      //     onChange={(e) => commitTime(e.target.value, timePeriod)}
-      //     placeholder="07:35"
-      //     className={`${inputClass} flex-1 min-w-0`}
-      //   />
-      //   <select
-      //     aria-label="Time of marriage AM/PM"
-      //     value={timePeriod}
-      //     onChange={(e) => commitTime(timeDigits, e.target.value === 'PM' ? 'PM' : 'AM')}
-      //     className={`${inputClass} w-24 shrink-0 cursor-pointer`}
-      //   >
-      //     <option value="AM">AM</option>
-      //     <option value="PM">PM</option>
-      //   </select>
-      // </div>
+      <div className="flex w-full items-center gap-2">
+        <input
+          type="text"
+          value={timeDigits}
+          onChange={(e) => commitTime(e.target.value, timePeriod)}
+          placeholder="07:35"
+          className={`${inputClass} !w-0 flex-1 min-w-0`}
+        />
 
-
-     <div className="flex w-full items-center gap-2">
-  <input
-    type="text"
-    value={timeDigits}
-    onChange={(e) => commitTime(e.target.value, timePeriod)}
-    placeholder="07:35"
-    className={`${inputClass} !w-0 flex-1 min-w-0`}
-  />
-
-  <select
-    aria-label="Time of marriage AM/PM"
-    value={timePeriod}
-    onChange={(e) =>
-      commitTime(timeDigits, e.target.value === 'PM' ? 'PM' : 'AM')
-    }
-    className={`${inputClass} !w-[75px] !shrink-0 cursor-pointer`}
-  >
-    <option value="AM">AM</option>
-    <option value="PM">PM</option>
-  </select>
-</div>
-
+        <select
+          aria-label="Time of marriage AM/PM"
+          value={timePeriod}
+          onChange={(e) =>
+            commitTime(timeDigits, e.target.value === 'PM' ? 'PM' : 'AM')
+          }
+          className={`${inputClass} !w-[75px] !shrink-0 cursor-pointer`}
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
     );
   };
 

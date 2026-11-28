@@ -17,7 +17,7 @@ import { PdfTemplateConfig } from '../../types/pdfMapping';
  */
 export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
   templateId: 'ph-colb-102',
-  configVersion: 2,
+  configVersion: 3,
   name: 'Municipal Form No. 102 (August 2016)',
   description:
     'Official Philippine Statistics Authority (PSA) Certificate of Live Birth 2-page aligned template',
@@ -764,7 +764,7 @@ export const PH_COLB_102_CONFIG: PdfTemplateConfig = {
       y: 449,
       fontSize: 9,
       minFontSize: 5.5,
-      maxWidth: 32,
+      maxWidth: 135,
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'colb.parentsMarriageDateDay',

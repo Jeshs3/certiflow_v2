@@ -327,7 +327,20 @@ function resolveFieldValueRaw(
         ? rawCombined.split('-').slice(1).join('-').trim()
         : '';
 
+    const freeTextDate20a =
+      !isNotMarried &&
+      !colb?.parentsMarriageDateDay?.trim() &&
+      !colb?.parentsMarriageDateYear?.trim() &&
+      Boolean(colb?.parentsMarriageDateMonth?.trim()) &&
+      !parseIsoDateToColbParts(colb?.parentsMarriageDateMonth) &&
+      !/^(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)$/i.test(
+        (colb?.parentsMarriageDateMonth || '').trim()
+      )
+        ? normalizeNotApplicable((colb?.parentsMarriageDateMonth || '').trim()).toUpperCase()
+        : '';
+
     if (dataPath === 'colb.parentsMarriageDate') {
+      if (freeTextDate20a) return sanitizePdfText(freeTextDate20a);
       const explicitDate = [
         colb?.parentsMarriageDateMonth,
         colb?.parentsMarriageDateDay,
@@ -350,6 +363,7 @@ function resolveFieldValueRaw(
       return sanitizePdfText((fallbackPlacePart || explicitPlace).toUpperCase());
     }
     if (dataPath === 'colb.parentsMarriageDateMonth') {
+      if (freeTextDate20a) return '';
       if (colb?.parentsMarriageDateMonth) return sanitizePdfText(colb.parentsMarriageDateMonth.toUpperCase());
       const parsed = parseIsoDateToColbParts(fallbackDatePart);
       if (parsed) return sanitizePdfText(parsed.monthName);
@@ -357,6 +371,7 @@ function resolveFieldValueRaw(
       return sanitizePdfText((md[0] || '').toUpperCase());
     }
     if (dataPath === 'colb.parentsMarriageDateDay') {
+      if (freeTextDate20a) return sanitizePdfText(freeTextDate20a);
       if (colb?.parentsMarriageDateDay) return sanitizePdfText(colb.parentsMarriageDateDay.toUpperCase());
       const parsed = parseIsoDateToColbParts(fallbackDatePart);
       if (parsed) return sanitizePdfText(parsed.dayPadded);
@@ -364,6 +379,7 @@ function resolveFieldValueRaw(
       return sanitizePdfText((md[1] || '').toUpperCase());
     }
     if (dataPath === 'colb.parentsMarriageDateYear') {
+      if (freeTextDate20a) return '';
       if (colb?.parentsMarriageDateYear) return sanitizePdfText(colb.parentsMarriageDateYear.toUpperCase());
       const parsed = parseIsoDateToColbParts(fallbackDatePart);
       if (parsed) return sanitizePdfText(parsed.year);

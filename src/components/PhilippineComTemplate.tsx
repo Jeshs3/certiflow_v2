@@ -40,12 +40,11 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
   let hMonth = toFullMonthName(com?.husbandDobMonth);
   let hYear = com?.husbandDobYear || '';
   if (!hDay && groom.dateOfBirth) {
-    const parts = groom.dateOfBirth.split('-');
-    if (parts.length === 3) {
-      hYear = parts[0];
-      const monthNum = parseInt(parts[1], 10);
-      hMonth = longMonths[monthNum - 1] || toFullMonthName(parts[1]);
-      hDay = parts[2];
+    const parsed = parseIsoDateToColbParts(groom.dateOfBirth);
+    if (parsed) {
+      hYear = parsed.year;
+      hMonth = parsed.monthName;
+      hDay = parsed.dayPadded;
     }
   }
   if (blankMode) {
@@ -63,12 +62,11 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
   let wMonth = toFullMonthName(com?.wifeDobMonth);
   let wYear = com?.wifeDobYear || '';
   if (!wDay && bride.dateOfBirth) {
-    const parts = bride.dateOfBirth.split('-');
-    if (parts.length === 3) {
-      wYear = parts[0];
-      const monthNum = parseInt(parts[1], 10);
-      wMonth = longMonths[monthNum - 1] || toFullMonthName(parts[1]);
-      wDay = parts[2];
+    const parsed = parseIsoDateToColbParts(bride.dateOfBirth);
+    if (parsed) {
+      wYear = parsed.year;
+      wMonth = parsed.monthName;
+      wDay = parsed.dayPadded;
     }
   }
   if (blankMode) {
@@ -81,13 +79,12 @@ export const PhilippineComTemplate: React.FC<PhilippineComTemplateProps> = ({
   let mDay = com?.marriageDay || '';
   let mMonth = toFullMonthName(com?.marriageMonth);
   let mYear = com?.marriageYear || '';
-  if (!mDay && marriage.dateOfMarriage) {
-    const parts = marriage.dateOfMarriage.split('-');
-    if (parts.length === 3) {
-      mYear = parts[0];
-      const monthNum = parseInt(parts[1], 10);
-      mMonth = longMonths[monthNum - 1] || toFullMonthName(parts[1]);
-      mDay = parts[2];
+  if (!mDay && !mMonth && !mYear && marriage.dateOfMarriage) {
+    const parsed = parseIsoDateToColbParts(marriage.dateOfMarriage);
+    if (parsed) {
+      mYear = parsed.year;
+      mMonth = parsed.monthName;
+      mDay = parsed.dayPadded;
     }
   }
   if (blankMode) {

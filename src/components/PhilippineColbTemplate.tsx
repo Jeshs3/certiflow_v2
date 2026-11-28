@@ -1569,10 +1569,23 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                       mMonth = (md[0] || '').toUpperCase();
                       mDay = (md[1] || '').toUpperCase();
                       mYear = commaSplit[1].trim().toUpperCase();
+                    } else {
+                      mMonth = datePart.toUpperCase();
                     }
                   }
                 }
               }
+
+              const freeText20a =
+                !isNotMarried &&
+                !mDay.trim() &&
+                !mYear.trim() &&
+                Boolean(mMonth.trim()) &&
+                !/^(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)$/i.test(
+                  mMonth.trim()
+                )
+                  ? mMonth.trim().toUpperCase()
+                  : '';
 
               let pCity = colb?.parentsMarriagePlaceCity || '';
               let pProvince = colb?.parentsMarriagePlaceProvince || '';
@@ -1627,27 +1640,39 @@ export const PhilippineColbTemplate: React.FC<PhilippineColbTemplateProps> = ({
                         20a. <span className="uppercase">DATE</span>
                       </span>
                       <div className="flex-1 grid grid-cols-3 text-center pl-1">
-                        <div>
-                          <BoundBox bindingId="parents.marriageDateMonth" token="{{parents.marriageDateMonth}}">
-                            <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
-                              {blankMode ? '' : (isNotMarried ? 'NOT' : mMonth)}
-                            </p>
-                          </BoundBox>
-                        </div>
-                        <div>
-                          <BoundBox bindingId="parents.marriageDateDay" token="{{parents.marriageDateDay}}">
-                            <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
-                              {blankMode ? '' : (isNotMarried ? 'MARRIED' : mDay)}
-                            </p>
-                          </BoundBox>
-                        </div>
-                        <div>
-                          <BoundBox bindingId="parents.marriageDateYear" token="{{parents.marriageDateYear}}">
-                            <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
-                              {blankMode ? '' : (isNotMarried ? '' : mYear)}
-                            </p>
-                          </BoundBox>
-                        </div>
+                        {freeText20a ? (
+                          <div className="col-span-3">
+                            <BoundBox bindingId="parents.marriageDateMonth" token="{{parents.marriageDateMonth}}">
+                              <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
+                                {blankMode ? '' : freeText20a}
+                              </p>
+                            </BoundBox>
+                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              <BoundBox bindingId="parents.marriageDateMonth" token="{{parents.marriageDateMonth}}">
+                                <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
+                                  {blankMode ? '' : (isNotMarried ? 'NOT' : mMonth)}
+                                </p>
+                              </BoundBox>
+                            </div>
+                            <div>
+                              <BoundBox bindingId="parents.marriageDateDay" token="{{parents.marriageDateDay}}">
+                                <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
+                                  {blankMode ? '' : (isNotMarried ? 'MARRIED' : mDay)}
+                                </p>
+                              </BoundBox>
+                            </div>
+                            <div>
+                              <BoundBox bindingId="parents.marriageDateYear" token="{{parents.marriageDateYear}}">
+                                <p data-print-value="true" className="font-helvetica font-bold text-[8.5pt] uppercase truncate text-black min-h-[14px] leading-tight">
+                                  {blankMode ? '' : (isNotMarried ? '' : mYear)}
+                                </p>
+                              </BoundBox>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

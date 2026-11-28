@@ -18,7 +18,7 @@ import { PdfTemplateConfig } from '../../types/pdfMapping';
  */
 export const PH_COM_97_CONFIG: PdfTemplateConfig = {
   templateId: 'ph-com-97',
-  configVersion: 7,
+  configVersion: 9,
   name: 'Municipal Form No. 97 (August 2016)',
   description:
     'Official Philippine Statistics Authority (PSA) Certificate of Marriage 2-page aligned template',
@@ -162,7 +162,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.husbandDobMonth',
-      sampleValue: 'May',
+      sampleValue: 'MAY',
     },
     {
       id: 'com_husband_dob_year',
@@ -618,7 +618,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.wifeDobMonth',
-      sampleValue: 'November',
+      sampleValue: 'NOVEMBER',
     },
     {
       id: 'com_wife_dob_year',
@@ -1277,7 +1277,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.licenseIssuedDate',
-      sampleValue: 'September-10-2023',
+      sampleValue: 'SEPTEMBER 10, 2023',
     },
     {
       id: 'com_license_issued_place',
@@ -1514,7 +1514,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'left',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.receivedByDate',
-      sampleValue: 'September-24-2023',
+      sampleValue: 'SEPTEMBER 24, 2023',
     },
     {
       id: 'com_registered_by_name',
@@ -1562,7 +1562,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'left',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.registeredByDate',
-      sampleValue: 'September-25-2023',
+      sampleValue: 'SEPTEMBER 25, 2023',
     },
     {
       id: 'com_remarks_annotation',
@@ -2260,7 +2260,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.delayedMarriageDate_self',
-      sampleValue: 'September-23-2023',
+      sampleValue: 'SEPTEMBER 23, 2023',
     },
     {
       id: 'com_del_check_between',
@@ -2342,7 +2342,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.delayedMarriageDate_between',
-      sampleValue: 'September-23-2023',
+      sampleValue: 'SEPTEMBER 23, 2023',
     },
     {
       id: 'com_del_solemnizer',
@@ -2480,7 +2480,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.licenseIssuedDate',
-      sampleValue: 'September-10-2023',
+      sampleValue: 'SEPTEMBER 10, 2023',
     },
     {
       id: 'com_del_lic_place',
@@ -2642,7 +2642,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.delayedSwornMonth',
-      sampleValue: 'October',
+      sampleValue: 'OCTOBER',
     },
     {
       id: 'com_del_sworn_year',
@@ -2722,7 +2722,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.delayedSwornMonth',
-      sampleValue: 'October',
+      sampleValue: 'OCTOBER',
     },
     {
       id: 'com_del_jurat_year',
@@ -2786,7 +2786,7 @@ export const PH_COM_97_CONFIG: PdfTemplateConfig = {
       textAlign: 'center',
       fontFamily: 'HelveticaBold',
       dataPath: 'com.delayedAffiantCtcDate',
-      sampleValue: 'January-10-2024',
+      sampleValue: 'JANUARY 10, 2024',
     },
     {
       id: 'com_del_ctc_place',
